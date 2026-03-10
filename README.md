@@ -92,7 +92,7 @@ chmod +x install-all.sh start-all.sh
 ### Access the Application
 - **Frontend**: https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
 - **Backend API**: https://prodflow-6rmm.onrender.com (Production) / http://localhost:5000 (Development)
-- **AI Service**: http://localhost:8000
+- **AI Service**: https://prodflow-2w53.onrender.com (Production) / http://localhost:8000 (Development)
 
 ## 🐳 Docker Deployment
 
@@ -188,14 +188,14 @@ FRONTEND_URL=https://prodflowaii.vercel.app
 #### Frontend
 ```bash
 VITE_API_BASE_URL=https://prodflow-6rmm.onrender.com/api
-VITE_AI_SERVICE_URL=http://localhost:8000
+VITE_AI_SERVICE_URL=https://prodflow-2w53.onrender.com
 ```
 
 #### AI Service
 ```bash
 HOST=0.0.0.0
 PORT=8000
-ENVIRONMENT=development
+ENVIRONMENT=production
 ```
 
 ## 🔐 Security Features

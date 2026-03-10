@@ -59,7 +59,7 @@ Complete deployment guide for ProdFlow AI Sprint Planning SaaS with AI Predictio
 4. **Access the application**
    - Frontend: https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
    - Backend API: https://prodflow-6rmm.onrender.com (Production) / http://localhost:5000 (Development)
-   - AI Service: http://localhost:8000
+   - AI Service: https://prodflow-2w53.onrender.com (Production) / http://localhost:8000 (Development)
 
 ### Manual Setup
 
@@ -165,13 +165,50 @@ For your own Render deployment:
    NODE_ENV=production
    MONGODB_URI=mongodb+srv://pallavkanani27_db_user:BcudjJZC1dDuC97R@cluster0.ug3q9ut.mongodb.net/prodflow-ai?retryWrites=true&w=majority
    JWT_SECRET=your-super-secret-jwt-key-minimum-32-characters
-   AI_SERVICE_URL=https://your-ai-service-domain.com
+   AI_SERVICE_URL=https://prodflow-2w53.onrender.com
    FRONTEND_URL=https://prodflowaii.vercel.app
    ```
 
 4. **Deploy**
    - Render will automatically deploy on every push to main branch
    - Custom domain can be configured in service settings
+
+#### Render Deployment (AI Service)
+
+**ProdFlow AI Service is already deployed on Render**: https://prodflow-2w53.onrender.com
+
+For your own Render deployment:
+
+1. **Connect Repository**
+   - Go to [Render Dashboard](https://render.com/dashboard)
+   - Create new Web Service
+   - Connect your GitHub repository
+   - Select the `ai-service` folder as root directory
+
+2. **Configure Build Settings**
+   ```bash
+   # Build Command
+   pip install -r requirements.txt
+   
+   # Start Command
+   python main.py
+   
+   # Environment
+   Python 3.11
+   ```
+
+3. **Environment Variables**
+   ```bash
+   HOST=0.0.0.0
+   PORT=8000
+   ENVIRONMENT=production
+   CORS_ORIGINS=["https://prodflowaii.vercel.app", "https://prodflow-6rmm.onrender.com"]
+   ```
+
+4. **Deploy**
+   - Render will automatically deploy on every push to main branch
+   - The AI model files are included in the repository
+   - Service provides sprint prediction endpoints
 
 #### Vercel Deployment (Frontend)
 
@@ -199,7 +236,7 @@ For your own Vercel deployment:
 3. **Environment Variables**
    ```bash
    VITE_API_BASE_URL=https://prodflow-6rmm.onrender.com/api
-   VITE_AI_SERVICE_URL=https://your-ai-service-domain.com
+   VITE_AI_SERVICE_URL=https://prodflow-2w53.onrender.com
    VITE_NODE_ENV=production
    ```
 

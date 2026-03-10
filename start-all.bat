@@ -77,12 +77,14 @@ echo.
 echo Services running:
 echo - Frontend:   https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
 echo - Backend:    https://prodflow-6rmm.onrender.com (Production) / http://localhost:5000 (Development)
-echo - AI Service: http://localhost:8000
+echo - AI Service: https://prodflow-2w53.onrender.com (Production) / http://localhost:8000 (Development)
 echo.
 echo 📱 Production Frontend: https://prodflowaii.vercel.app
 echo 🔗 Production Backend: https://prodflow-6rmm.onrender.com
+echo 🤖 Production AI Service: https://prodflow-2w53.onrender.com
 echo 🛠️  Development Frontend: http://localhost:3000
 echo 🛠️  Development Backend: http://localhost:5000
+echo 🛠️  Development AI Service: http://localhost:8000
 echo.
 echo To stop all services, close the terminal windows or press Ctrl+C in each.
 echo For production deployment, use Docker: docker-compose up -d

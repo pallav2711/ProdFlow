@@ -66,7 +66,7 @@ services:
       - MONGODB_URI=mongodb+srv://pallavkanani27_db_user:BcudjJZC1dDuC97R@cluster0.ug3q9ut.mongodb.net/prodflow-ai?retryWrites=true&w=majority
       - JWT_SECRET=${JWT_SECRET:-prodflow-ai-development-jwt-key-2024-change-in-production-minimum-32-chars}
       - JWT_EXPIRE=7d
-      - AI_SERVICE_URL=http://ai-service:8000
+      - AI_SERVICE_URL=https://prodflow-2w53.onrender.com
       - FRONTEND_URL=https://prodflowaii.vercel.app
     ports:
       - "5000:5000"
