@@ -38,7 +38,7 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
       - ENVIRONMENT=${ENVIRONMENT:-development}
-      - CORS_ORIGINS=["http://localhost:3000", "http://localhost:5000"]
+      - CORS_ORIGINS=["https://prodflowaii.vercel.app", "http://localhost:3000", "http://localhost:5000"]
     ports:
       - "8000:8000"
     volumes:
@@ -67,7 +67,7 @@ services:
       - JWT_SECRET=${JWT_SECRET:-prodflow-ai-development-jwt-key-2024-change-in-production-minimum-32-chars}
       - JWT_EXPIRE=7d
       - AI_SERVICE_URL=http://ai-service:8000
-      - FRONTEND_URL=http://localhost:3000
+      - FRONTEND_URL=https://prodflowaii.vercel.app
     ports:
       - "5000:5000"
     volumes:

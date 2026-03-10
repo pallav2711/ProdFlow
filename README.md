@@ -90,7 +90,7 @@ chmod +x install-all.sh start-all.sh
 ```
 
 ### Access the Application
-- **Frontend**: http://localhost:3000
+- **Frontend**: https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
 - **Backend API**: http://localhost:5000
 - **AI Service**: http://localhost:8000
 

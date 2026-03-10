@@ -16,7 +16,7 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
       - ENVIRONMENT=production
-      - CORS_ORIGINS=["https://${FRONTEND_DOMAIN}", "https://${BACKEND_DOMAIN}"]
+      - CORS_ORIGINS=["https://prodflowaii.vercel.app", "https://${BACKEND_DOMAIN}"]
       - LOG_LEVEL=INFO
     expose:
       - "8000"
@@ -46,7 +46,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - JWT_EXPIRE=7d
       - AI_SERVICE_URL=http://ai-service:8000
-      - FRONTEND_URL=https://${FRONTEND_DOMAIN}
+      - FRONTEND_URL=https://prodflowaii.vercel.app
       - BCRYPT_ROUNDS=12
       - TRUST_PROXY=true
     expose:

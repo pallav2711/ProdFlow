@@ -65,11 +65,12 @@ echo ✅ ALL SERVICES STARTED SUCCESSFULLY!
 echo ================================================================================
 echo.
 echo Services running:
-echo - Frontend:   http://localhost:3000
+echo - Frontend:   https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
 echo - Backend:    http://localhost:5000
 echo - AI Service: http://localhost:8000
 echo.
-echo 📱 Open your browser and navigate to: http://localhost:3000
+echo 📱 Production Frontend: https://prodflowaii.vercel.app
+echo 🛠️  Development Frontend: http://localhost:3000
 echo.
 echo To stop all services, close the terminal windows or press Ctrl+C in each.
 echo For production deployment, use Docker: docker-compose up -d

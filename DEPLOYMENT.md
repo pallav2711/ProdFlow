@@ -57,7 +57,7 @@ Complete deployment guide for ProdFlow AI Sprint Planning SaaS with AI Predictio
    ```
 
 4. **Access the application**
-   - Frontend: http://localhost:3000
+   - Frontend: https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
    - Backend API: http://localhost:5000
    - AI Service: http://localhost:8000
 
@@ -135,6 +135,40 @@ python main.py
 ## 🌐 Production Deployment
 
 ### Cloud Platforms
+
+#### Vercel Deployment (Frontend)
+
+**ProdFlow AI Frontend is already deployed on Vercel**: https://prodflowaii.vercel.app
+
+For your own Vercel deployment:
+
+1. **Connect Repository**
+   - Go to [Vercel Dashboard](https://vercel.com/dashboard)
+   - Import your GitHub repository
+   - Select the `frontend` folder as root directory
+
+2. **Configure Build Settings**
+   ```bash
+   # Build Command
+   npm run build
+   
+   # Output Directory
+   dist
+   
+   # Install Command
+   npm install
+   ```
+
+3. **Environment Variables**
+   ```bash
+   VITE_API_BASE_URL=https://your-backend-domain.com/api
+   VITE_AI_SERVICE_URL=https://your-ai-service-domain.com
+   VITE_NODE_ENV=production
+   ```
+
+4. **Deploy**
+   - Vercel will automatically deploy on every push to main branch
+   - Custom domain can be configured in project settings
 
 #### AWS Deployment
 1. **EC2 Instance Setup**
