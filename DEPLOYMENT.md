@@ -205,6 +205,8 @@ For your own Render deployment:
    CORS_ORIGINS=["https://prodflowaii.vercel.app", "https://prodflow-6rmm.onrender.com"]
    ```
 
+**Note**: The production `requirements.txt` contains only runtime dependencies. For local development with model training, use `requirements-dev.txt`.
+
 4. **Deploy**
    - Render will automatically deploy on every push to main branch
    - The AI model files are included in the repository
