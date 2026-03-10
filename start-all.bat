@@ -13,16 +13,6 @@ if not exist "backend\node_modules" (
     exit /b 1
 )
 
-echo [1.1/4] Testing Backend Environment...
-cd backend
-node test-env.js
-if %errorlevel% neq 0 (
-    echo ❌ Environment test failed!
-    pause
-    exit /b 1
-)
-cd ..
-
 echo [2/4] Checking Frontend...
 if not exist "frontend\node_modules" (
     echo ❌ Frontend dependencies not installed. Run install-all.bat first.

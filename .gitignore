@@ -8,6 +8,7 @@
 .env.development
 .env.production
 .env.test
+.env.backup
 
 # Dependencies
 node_modules/
@@ -125,3 +126,13 @@ ssl/
 
 # Docker volumes
 docker-data/
+
+# Test files
+test-*.js
+*.test.js
+*.spec.js
+
+# Development files
+*.backup
+*.bak
+*.tmp
