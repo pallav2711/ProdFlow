@@ -1,0 +1,60 @@
+🚀 AI Sprint Commander – Final Tech Stack (Short)
+🧠 Backend
+
+Node.js
+
+Express.js
+
+MongoDB + Mongoose
+
+Socket.IO (real-time updates)
+
+JWT Authentication
+
+RBAC (Role-Based Access Control)
+
+🖥 Frontend
+
+React (JavaScript)
+
+Tailwind CSS
+
+Axios
+
+Socket.IO Client
+
+🔁 Architecture Style
+
+Event-Driven Architecture
+
+In-app event manager (MongoDB event collection)
+
+Async event processing
+
+🤖 AI / ML
+
+Phase 1: Rule-based AI (Node.js)
+
+Phase 2+: Python + scikit-learn (separate AI service via REST)
+
+🔐 Security
+
+JWT (Access tokens)
+
+Role-based API & WebSocket access
+
+🧪 Tooling
+
+Git + GitHub
+
+Postman
+
+VS Code
+
+Figma (UI)
+
+🐳 Optional (Later)
+
+Docker
+
+Redis (for event queue)

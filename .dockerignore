@@ -1,0 +1,72 @@
+# =============================================================================
+# PRODFLOW AI - DOCKER IGNORE FILE
+# =============================================================================
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+*.md
+docs/
+PROJECT_DOCUMENTATION/
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencies
+node_modules/
+*/node_modules/
+venv/
+*/venv/
+__pycache__/
+*/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build outputs
+dist/
+build/
+*/dist/
+*/build/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+*.tmp
+*.temp
+
+# Test files
+coverage/
+.nyc_output/
+test-results/
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+
+# Temporary files
+tmp/
+temp/
