@@ -16,7 +16,7 @@ services:
       - HOST=0.0.0.0
       - PORT=8000
       - ENVIRONMENT=production
-      - CORS_ORIGINS=["https://prodflowaii.vercel.app", "https://${BACKEND_DOMAIN}"]
+      - CORS_ORIGINS=["https://prodflowaii.vercel.app", "https://prodflow-6rmm.onrender.com"]
       - LOG_LEVEL=INFO
     expose:
       - "8000"

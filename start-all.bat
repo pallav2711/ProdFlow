@@ -13,6 +13,16 @@ if not exist "backend\node_modules" (
     exit /b 1
 )
 
+echo [1.1/4] Testing Backend Environment...
+cd backend
+node test-env.js
+if %errorlevel% neq 0 (
+    echo ❌ Environment test failed!
+    pause
+    exit /b 1
+)
+cd ..
+
 echo [2/4] Checking Frontend...
 if not exist "frontend\node_modules" (
     echo ❌ Frontend dependencies not installed. Run install-all.bat first.
@@ -66,11 +76,13 @@ echo ===========================================================================
 echo.
 echo Services running:
 echo - Frontend:   https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
-echo - Backend:    http://localhost:5000
+echo - Backend:    https://prodflow-6rmm.onrender.com (Production) / http://localhost:5000 (Development)
 echo - AI Service: http://localhost:8000
 echo.
 echo 📱 Production Frontend: https://prodflowaii.vercel.app
+echo 🔗 Production Backend: https://prodflow-6rmm.onrender.com
 echo 🛠️  Development Frontend: http://localhost:3000
+echo 🛠️  Development Backend: http://localhost:5000
 echo.
 echo To stop all services, close the terminal windows or press Ctrl+C in each.
 echo For production deployment, use Docker: docker-compose up -d

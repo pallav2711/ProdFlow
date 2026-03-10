@@ -91,7 +91,7 @@ chmod +x install-all.sh start-all.sh
 
 ### Access the Application
 - **Frontend**: https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
-- **Backend API**: http://localhost:5000
+- **Backend API**: https://prodflow-6rmm.onrender.com (Production) / http://localhost:5000 (Development)
 - **AI Service**: http://localhost:8000
 
 ## 🐳 Docker Deployment
@@ -179,14 +179,15 @@ Example configurations are provided in `.env.example` files.
 
 #### Backend
 ```bash
-MONGODB_URI=mongodb://localhost:27017/prodflow-ai
+MONGODB_URI=mongodb+srv://pallavkanani27_db_user:BcudjJZC1dDuC97R@cluster0.ug3q9ut.mongodb.net/prodflow-ai?retryWrites=true&w=majority
 JWT_SECRET=your-secret-key
 AI_SERVICE_URL=http://localhost:8000
+FRONTEND_URL=https://prodflowaii.vercel.app
 ```
 
 #### Frontend
 ```bash
-VITE_API_BASE_URL=http://localhost:5000/api
+VITE_API_BASE_URL=https://prodflow-6rmm.onrender.com/api
 VITE_AI_SERVICE_URL=http://localhost:8000
 ```
 
