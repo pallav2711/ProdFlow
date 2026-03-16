@@ -30,6 +30,14 @@ const userSchema = new mongoose.Schema({
     enum: ['Product Manager', 'Team Lead', 'Developer'],
     required: [true, 'Role is required']
   },
+  refreshToken: {
+    type: String,
+    select: false // Don't return refresh token by default
+  },
+  lastLogin: {
+    type: Date,
+    default: Date.now
+  },
   createdAt: {
     type: Date,
     default: Date.now

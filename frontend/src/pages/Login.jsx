@@ -3,14 +3,22 @@ import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [formData, setFormData] = useState({ 
+    email: '', 
+    password: '', 
+    rememberMe: true 
+  })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value, type, checked } = e.target
+    setFormData({ 
+      ...formData, 
+      [name]: type === 'checkbox' ? checked : value 
+    })
   }
 
   const handleSubmit = async (e) => {
@@ -19,7 +27,7 @@ const Login = () => {
     setLoading(true)
 
     try {
-      await login(formData.email, formData.password)
+      await login(formData.email, formData.password, formData.rememberMe)
       navigate('/dashboard')
     } catch (err) {
       setError(err.response?.data?.message || 'Login failed')
@@ -29,19 +37,19 @@ const Login = () => {
   }
 
   return (
-    <div className="h-screen flex items-center justify-center bg-gradient-to-br from-primary via-secondary to-white px-4 relative overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary via-secondary to-white px-4 py-8 relative overflow-hidden">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-20 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-40 -right-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute -bottom-20 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
+        <div className="absolute top-10 sm:top-20 -left-10 sm:-left-20 w-48 sm:w-72 h-48 sm:h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute top-20 sm:top-40 -right-10 sm:-right-20 w-48 sm:w-72 h-48 sm:h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-10 sm:-bottom-20 left-1/2 w-48 sm:w-72 h-48 sm:h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-4000"></div>
       </div>
 
       <div className="max-w-md w-full relative z-10">
         {/* Logo/Brand */}
-        <div className="text-center mb-6">
+        <div className="text-center mb-4 sm:mb-6">
           <Link to="/" className="inline-block">
-            <h1 className="text-3xl font-bold text-accent mb-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-accent mb-1">
               ProdFlow <span className="text-indigo-600">AI</span>
             </h1>
             <p className="text-xs text-gray-600">AI-Driven Product & Sprint Planning</p>
@@ -49,9 +57,9 @@ const Login = () => {
         </div>
 
         {/* Login Card */}
-        <div className="bg-white/80 backdrop-blur-xl p-6 rounded-2xl shadow-2xl border border-gray-200/50">
-          <div className="mb-5">
-            <h2 className="text-2xl font-bold text-accent mb-1">Welcome back</h2>
+        <div className="bg-white/80 backdrop-blur-xl p-5 sm:p-6 rounded-2xl shadow-2xl border border-gray-200/50 mobile-card">
+          <div className="mb-4 sm:mb-5">
+            <h2 className="text-xl sm:text-2xl font-bold text-accent mb-1">Welcome back</h2>
             <p className="text-sm text-gray-600">Sign in to continue to your dashboard</p>
           </div>
           
@@ -74,7 +82,7 @@ const Login = () => {
                 onChange={handleChange}
                 required
                 placeholder="you@example.com"
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white/50"
+                className="w-full px-3 py-3 sm:py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white/50 touch-target"
               />
             </div>
 
@@ -87,14 +95,29 @@ const Login = () => {
                 onChange={handleChange}
                 required
                 placeholder="••••••••"
-                className="w-full px-3 py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white/50"
+                className="w-full px-3 py-3 sm:py-2.5 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all bg-white/50 touch-target"
               />
+            </div>
+
+            {/* Remember Me Checkbox */}
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                name="rememberMe"
+                id="rememberMe"
+                checked={formData.rememberMe}
+                onChange={handleChange}
+                className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+              />
+              <label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+                Keep me signed in
+              </label>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-accent text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center"
+              className="w-full bg-accent text-white py-3 sm:py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-800 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center touch-target"
             >
               {loading ? (
                 <>
@@ -125,7 +148,7 @@ const Login = () => {
           </div>
 
           <div className="mt-4 pt-4 border-t border-gray-200">
-            <Link to="/" className="text-xs text-gray-600 hover:text-accent transition-colors flex items-center justify-center">
+            <Link to="/" className="text-xs text-gray-600 hover:text-accent transition-colors flex items-center justify-center touch-target">
               <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>

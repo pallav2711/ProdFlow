@@ -227,65 +227,65 @@ const Dashboard = () => {
   // Team Lead Dashboard - Show Sprint Overview (No Personal Tasks)
   if (user.role === 'Team Lead') {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pt-20 sm:pt-24">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-          <p className="text-gray-600 mt-1">Team Lead Dashboard - Sprint Overview</p>
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+          <p className="text-gray-600 mt-1 text-sm sm:text-base">Team Lead Dashboard - Sprint Overview</p>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-gray-600 text-sm font-medium mb-1">Total Products</h3>
-                <p className="text-3xl font-bold text-gray-900">{stats.products}</p>
+                <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Total Products</h3>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.products}</p>
               </div>
-              <div className="bg-purple-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-purple-100 p-2 sm:p-3 rounded-lg">
+                <svg className="w-5 sm:w-6 h-5 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-gray-600 text-sm font-medium mb-1">Total Sprints</h3>
-                <p className="text-3xl font-bold text-gray-900">{stats.sprints}</p>
+                <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Total Sprints</h3>
+                <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.sprints}</p>
               </div>
-              <div className="bg-gray-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-gray-100 p-2 sm:p-3 rounded-lg">
+                <svg className="w-5 sm:w-6 h-5 sm:h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-gray-600 text-sm font-medium mb-1">Active Sprints</h3>
-                <p className="text-3xl font-bold text-blue-600">{stats.activeSprints}</p>
+                <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Active Sprints</h3>
+                <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.activeSprints}</p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-blue-100 p-2 sm:p-3 rounded-lg">
+                <svg className="w-5 sm:w-6 h-5 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-gray-600 text-sm font-medium mb-1">Completed Sprints</h3>
-                <p className="text-3xl font-bold text-emerald-600">{stats.completedSprints}</p>
+                <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Completed Sprints</h3>
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-600">{stats.completedSprints}</p>
               </div>
-              <div className="bg-emerald-100 p-3 rounded-lg">
-                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-emerald-100 p-2 sm:p-3 rounded-lg">
+                <svg className="w-5 sm:w-6 h-5 sm:h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                 </svg>
               </div>
@@ -294,13 +294,13 @@ const Dashboard = () => {
         </div>
 
         {/* Sprints Overview */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
-          <div className="border-b border-gray-200 px-6 py-4">
-            <h2 className="text-xl font-bold text-gray-900">Sprints Overview</h2>
-            <p className="text-sm text-gray-600 mt-1">View all sprints with features and team assignments</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm mobile-card">
+          <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Sprints Overview</h2>
+            <p className="text-xs sm:text-sm text-gray-600 mt-1">View all sprints with features and team assignments</p>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
@@ -620,67 +620,67 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pt-20 sm:pt-24">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-        <p className="text-gray-600 mt-1">Here's what's happening with your projects</p>
+      <div className="mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+        <p className="text-gray-600 mt-1 text-sm sm:text-base">Here's what's happening with your projects</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid md:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-gray-600 text-sm font-medium mb-1">My Tasks</h3>
-              <p className="text-3xl font-bold text-gray-900">{stats.myTasks}</p>
+              <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">My Tasks</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-gray-900">{stats.myTasks}</p>
             </div>
-            <div className="bg-indigo-100 p-3 rounded-lg">
-              <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-indigo-100 p-2 sm:p-3 rounded-lg">
+              <svg className="w-5 sm:w-6 h-5 sm:h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-gray-600 text-sm font-medium mb-1">Completed Tasks</h3>
-              <p className="text-3xl font-bold text-green-600">{stats.completedTasks}</p>
+              <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Completed Tasks</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.completedTasks}</p>
             </div>
-            <div className="bg-green-100 p-3 rounded-lg">
-              <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-green-100 p-2 sm:p-3 rounded-lg">
+              <svg className="w-5 sm:w-6 h-5 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-gray-600 text-sm font-medium mb-1">Active Sprints</h3>
-              <p className="text-3xl font-bold text-blue-600">{stats.activeSprints}</p>
+              <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Active Sprints</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.activeSprints}</p>
               <p className="text-xs text-gray-500 mt-1">of {stats.sprints} total</p>
             </div>
-            <div className="bg-blue-100 p-3 rounded-lg">
-              <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-blue-100 p-2 sm:p-3 rounded-lg">
+              <svg className="w-5 sm:w-6 h-5 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
             </div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+        <div className="bg-white p-4 sm:p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-gray-600 text-sm font-medium mb-1">Completed Sprints</h3>
-              <p className="text-3xl font-bold text-emerald-600">{stats.completedSprints}</p>
+              <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Completed Sprints</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-emerald-600">{stats.completedSprints}</p>
               <p className="text-xs text-gray-500 mt-1">✅ All tasks done</p>
             </div>
-            <div className="bg-emerald-100 p-3 rounded-lg">
-              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="bg-emerald-100 p-2 sm:p-3 rounded-lg">
+              <svg className="w-5 sm:w-6 h-5 sm:h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
               </svg>
             </div>
@@ -689,13 +689,13 @@ const Dashboard = () => {
       </div>
 
       {/* Tasks Section */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-8">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 sm:mb-8 mobile-card">
         {/* Tabs */}
         <div className="border-b border-gray-200">
-          <div className="flex">
+          <div className="flex overflow-x-auto">
             <button
               onClick={() => setActiveTab('myTasks')}
-              className={`px-6 py-4 font-semibold transition-colors ${
+              className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-colors whitespace-nowrap touch-target ${
                 activeTab === 'myTasks'
                   ? 'border-b-2 border-indigo-600 text-indigo-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -705,7 +705,7 @@ const Dashboard = () => {
             </button>
             <button
               onClick={() => setActiveTab('allTasks')}
-              className={`px-6 py-4 font-semibold transition-colors ${
+              className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-colors whitespace-nowrap touch-target ${
                 activeTab === 'allTasks'
                   ? 'border-b-2 border-indigo-600 text-indigo-600'
                   : 'text-gray-600 hover:text-gray-900'
@@ -717,64 +717,66 @@ const Dashboard = () => {
         </div>
 
         {/* Filters */}
-        <div className="p-4 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">Filter by status:</span>
-            <button
-              onClick={() => setFilterStatus('all')}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                filterStatus === 'all'
-                  ? 'bg-indigo-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilterStatus('To Do')}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                filterStatus === 'To Do'
-                  ? 'bg-gray-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              📋 To Do
-            </button>
-            <button
-              onClick={() => setFilterStatus('In Progress')}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                filterStatus === 'In Progress'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              ⚡ In Progress
-            </button>
-            <button
-              onClick={() => setFilterStatus('Completed')}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                filterStatus === 'Completed'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              ✅ Completed
-            </button>
-            <button
-              onClick={() => setFilterStatus('Blocked')}
-              className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                filterStatus === 'Blocked'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
-              }`}
-            >
-              🚫 Blocked
-            </button>
+        <div className="p-3 sm:p-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs sm:text-sm font-medium text-gray-700 mb-2 sm:mb-0">Filter by status:</span>
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => setFilterStatus('all')}
+                className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors touch-target ${
+                  filterStatus === 'all'
+                    ? 'bg-indigo-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setFilterStatus('To Do')}
+                className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors touch-target ${
+                  filterStatus === 'To Do'
+                    ? 'bg-gray-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                📋 To Do
+              </button>
+              <button
+                onClick={() => setFilterStatus('In Progress')}
+                className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors touch-target ${
+                  filterStatus === 'In Progress'
+                    ? 'bg-blue-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                ⚡ In Progress
+              </button>
+              <button
+                onClick={() => setFilterStatus('Completed')}
+                className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors touch-target ${
+                  filterStatus === 'Completed'
+                    ? 'bg-green-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                ✅ Completed
+              </button>
+              <button
+                onClick={() => setFilterStatus('Blocked')}
+                className={`px-2 sm:px-3 py-1 rounded-lg text-xs sm:text-sm font-medium transition-colors touch-target ${
+                  filterStatus === 'Blocked'
+                    ? 'bg-red-600 text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                🚫 Blocked
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Tasks List */}
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {activeTab === 'myTasks' ? (
             filteredTasks(myTasks).length === 0 ? (
               <div className="text-center py-12">
@@ -787,11 +789,11 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-4">
                 {filteredTasks(myTasks).map((task) => (
-                  <div key={task._id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between mb-3">
+                  <div key={task._id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow mobile-card">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-3 gap-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <h3 className="font-bold text-lg text-gray-900">{task.title}</h3>
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="font-bold text-base sm:text-lg text-gray-900">{task.title}</h3>
                           {task.workType && (
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getWorkTypeColor(task.workType)}`}>
                               {getWorkTypeIcon(task.workType)} {task.workType}
@@ -801,8 +803,8 @@ const Dashboard = () => {
                             {getStatusIcon(task.status)} {task.status}
                           </span>
                         </div>
-                        <p className="text-gray-600 text-sm mb-2">{task.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
+                        <p className="text-gray-600 text-sm mb-2 mobile-text">{task.description}</p>
+                        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-gray-500">
                           <span className="flex items-center gap-1">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
@@ -826,29 +828,29 @@ const Dashboard = () => {
                           </div>
                         )}
                       </div>
-                      <div className="ml-4">
+                      <div className="lg:ml-4 w-full lg:w-auto">
                         {user.role === 'Developer' ? (
-                          <>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Update Status</label>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-medium text-gray-700">Update Status</label>
                             <select
                               value={task.status}
                               onChange={(e) => handleStatusChange(task._id, e.target.value)}
-                              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent touch-target"
                             >
                               <option value="To Do">📋 To Do</option>
                               <option value="In Progress">⚡ In Progress</option>
                               <option value="Pending Review">👀 Submit for Review</option>
                               <option value="Blocked">🚫 Blocked</option>
                             </select>
-                            <p className="text-xs text-gray-500 mt-1">Submit for review when done</p>
-                          </>
+                            <p className="text-xs text-gray-500">Submit for review when done</p>
+                          </div>
                         ) : (
-                          <>
-                            <label className="block text-xs font-medium text-gray-700 mb-1">Update Status</label>
+                          <div className="space-y-2">
+                            <label className="block text-xs font-medium text-gray-700">Update Status</label>
                             <select
                               value={task.status}
                               onChange={(e) => handleStatusChange(task._id, e.target.value)}
-                              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent touch-target"
                             >
                               <option value="To Do">📋 To Do</option>
                               <option value="In Progress">⚡ In Progress</option>
@@ -856,7 +858,7 @@ const Dashboard = () => {
                               <option value="Completed">✅ Completed</option>
                               <option value="Blocked">🚫 Blocked</option>
                             </select>
-                          </>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -960,18 +962,18 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Sprints */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
-        <h2 className="text-xl font-bold mb-4">Recent Sprints</h2>
+      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mobile-card">
+        <h2 className="text-lg sm:text-xl font-bold mb-4">Recent Sprints</h2>
         {sprints.length === 0 ? (
           <p className="text-gray-600">No sprints created yet</p>
         ) : (
           <div className="space-y-4">
             {sprints.slice(0, 5).map((sprint) => (
               <div key={sprint._id} className="border-b border-gray-200 pb-4 last:border-0">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-bold">{sprint.name}</h3>
-                    <p className="text-sm text-gray-600">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                  <div className="flex-1">
+                    <h3 className="font-bold text-base sm:text-lg">{sprint.name}</h3>
+                    <p className="text-sm text-gray-600 mobile-text">
                       {sprint.product?.name} • {sprint.duration} days • Team: {sprint.teamSize}
                     </p>
                   </div>

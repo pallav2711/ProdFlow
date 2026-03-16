@@ -14,149 +14,149 @@ const Landing = () => {
       <div className="fixed inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:16px_16px] opacity-30 pointer-events-none"></div>
 
       {/* Hero Section */}
-      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 pb-32 overflow-hidden">
+      <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-16 sm:pb-24 lg:pb-32 overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           {/* Gradient Orb 1 */}
-          <div className="absolute top-20 -left-20 w-72 h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
+          <div className="absolute top-10 sm:top-20 -left-10 sm:-left-20 w-48 sm:w-72 h-48 sm:h-72 bg-indigo-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob"></div>
           {/* Gradient Orb 2 */}
-          <div className="absolute top-40 -right-20 w-72 h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-20 sm:top-40 -right-10 sm:-right-20 w-48 sm:w-72 h-48 sm:h-72 bg-purple-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000"></div>
           {/* Gradient Orb 3 */}
-          <div className="absolute -bottom-20 left-1/2 w-72 h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
+          <div className="absolute -bottom-10 sm:-bottom-20 left-1/2 w-48 sm:w-72 h-48 sm:h-72 bg-pink-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000"></div>
         </div>
         
         <div className={`relative z-10 text-center transition-all duration-1000 ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}>
           {/* Trust Badge */}
-          <div className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 rounded-full mb-8 shadow-sm mt-14">
+          <div className="inline-flex items-center px-3 sm:px-4 py-2 bg-white border border-gray-200 rounded-full mb-6 sm:mb-8 shadow-sm mt-8 sm:mt-14">
             <span className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse"></span>
-            <span className="text-sm text-gray-700 font-medium">Built for agile teams & academic excellence</span>
+            <span className="text-xs sm:text-sm text-gray-700 font-medium">Built for agile teams & academic excellence</span>
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-6xl md:text-7xl font-bold text-accent mb-6 tracking-tight leading-tight">
+          <h1 className="text-responsive-5xl font-bold text-accent mb-4 sm:mb-6 tracking-tight leading-tight px-2">
             Smarter Planning.<br />
             Stronger Sprints.<br />
             <span className="text-indigo-600">Better Delivery.</span>
           </h1>
 
           {/* Subheadline */}
-          <p className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-responsive-xl text-gray-600 mb-8 sm:mb-12 max-w-3xl mx-auto leading-relaxed px-4">
             AI-powered sprint planning that predicts success before you commit. Make data-driven decisions, not guesses.
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row justify-center gap-4 mb-16">
+          <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 mb-12 sm:mb-16 px-4">
             <Link 
               to="/register" 
-              className="group bg-accent text-white px-8 py-4 rounded-xl text-lg font-semibold hover:bg-gray-800 transition-all hover:shadow-2xl hover:-translate-y-1 inline-flex items-center justify-center"
+              className="group bg-accent text-white px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold hover:bg-gray-800 transition-all hover:shadow-2xl hover:-translate-y-1 inline-flex items-center justify-center touch-target"
             >
               Start Planning Free
-              <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 sm:w-5 h-4 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
               </svg>
             </Link>
             <Link 
               to="/login" 
-              className="bg-white text-accent px-8 py-4 rounded-xl text-lg font-semibold border-2 border-gray-200 hover:border-accent transition-all hover:shadow-lg inline-flex items-center justify-center"
+              className="bg-white text-accent px-6 sm:px-8 py-3 sm:py-4 rounded-xl text-base sm:text-lg font-semibold border-2 border-gray-200 hover:border-accent transition-all hover:shadow-lg inline-flex items-center justify-center touch-target"
             >
               View Demo
             </Link>
           </div>
 
           {/* Stats/Social Proof */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto pt-8 border-t border-gray-200">
-            <div>
-              <div className="text-3xl font-bold text-accent mb-1">AI-Driven</div>
-              <div className="text-sm text-gray-600">Real ML Predictions</div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto pt-6 sm:pt-8 border-t border-gray-200 px-4">
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-accent mb-1">AI-Driven</div>
+              <div className="text-xs sm:text-sm text-gray-600">Real ML Predictions</div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-accent mb-1">3-Tier</div>
-              <div className="text-sm text-gray-600">Scalable Architecture</div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-accent mb-1">3-Tier</div>
+              <div className="text-xs sm:text-sm text-gray-600">Scalable Architecture</div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-accent mb-1">Role-Based</div>
-              <div className="text-sm text-gray-600">Access Control</div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-accent mb-1">Role-Based</div>
+              <div className="text-xs sm:text-sm text-gray-600">Access Control</div>
             </div>
-            <div>
-              <div className="text-3xl font-bold text-accent mb-1">Production</div>
-              <div className="text-sm text-gray-600">Ready MVP</div>
+            <div className="text-center">
+              <div className="text-2xl sm:text-3xl font-bold text-accent mb-1">Production</div>
+              <div className="text-xs sm:text-sm text-gray-600">Ready MVP</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Social Proof Section */}
-      <section className="relative bg-white py-16 border-y border-gray-200">
+      <section className="relative bg-white py-12 sm:py-16 border-y border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-sm text-gray-500 mb-8 uppercase tracking-wider font-semibold">Designed for Modern Product Teams</p>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center justify-items-center opacity-60">
+          <p className="text-center text-xs sm:text-sm text-gray-500 mb-6 sm:mb-8 uppercase tracking-wider font-semibold">Designed for Modern Product Teams</p>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 items-center justify-items-center opacity-60">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 mb-1">Product Managers</div>
-              <div className="text-sm text-gray-600">Vision & Strategy</div>
+              <div className="text-lg sm:text-2xl font-bold text-gray-800 mb-1">Product Managers</div>
+              <div className="text-xs sm:text-sm text-gray-600">Vision & Strategy</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 mb-1">Agile Teams</div>
-              <div className="text-sm text-gray-600">Sprint Execution</div>
+              <div className="text-lg sm:text-2xl font-bold text-gray-800 mb-1">Agile Teams</div>
+              <div className="text-xs sm:text-sm text-gray-600">Sprint Execution</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 mb-1">Engineering Leads</div>
-              <div className="text-sm text-gray-600">Capacity Planning</div>
+              <div className="text-lg sm:text-2xl font-bold text-gray-800 mb-1">Engineering Leads</div>
+              <div className="text-xs sm:text-sm text-gray-600">Capacity Planning</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-800 mb-1">Universities</div>
-              <div className="text-sm text-gray-600">Academic Projects</div>
+              <div className="text-lg sm:text-2xl font-bold text-gray-800 mb-1">Universities</div>
+              <div className="text-xs sm:text-sm text-gray-600">Academic Projects</div>
             </div>
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="relative py-24 bg-secondary">
+      <section id="features" className="relative py-16 sm:py-20 lg:py-24 bg-secondary">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-accent mb-4">Everything you need to plan smarter</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">From product vision to sprint execution, powered by real AI predictions</p>
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-responsive-4xl font-bold text-accent mb-4">Everything you need to plan smarter</h2>
+            <p className="text-responsive-xl text-gray-600 max-w-2xl mx-auto px-4">From product vision to sprint execution, powered by real AI predictions</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-responsive-1 gap-6 sm:gap-8">
             {/* Feature 1 */}
-            <div className="group bg-white p-8 rounded-2xl border border-gray-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+            <div className="group bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 mobile-card">
               <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-accent mb-3">Product Vision & Backlog</h3>
-              <p className="text-gray-600 mb-4 leading-relaxed">
+              <h3 className="text-xl sm:text-2xl font-bold text-accent mb-3">Product Vision & Backlog</h3>
+              <p className="text-gray-600 mb-4 leading-relaxed mobile-text">
                 Define clear product vision, create prioritized features with business value scoring, and maintain a healthy backlog.
               </p>
               <div className="text-sm text-indigo-600 font-semibold">→ Strategic planning made simple</div>
             </div>
 
             {/* Feature 2 */}
-            <div className="group bg-white p-8 rounded-2xl border border-gray-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+            <div className="group bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 mobile-card">
               <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <h3 className="text-2xl font-bold text-accent mb-3">Sprint Planning & Capacity</h3>
-              <p className="text-gray-600 mb-4 leading-relaxed">
+              <h3 className="text-xl sm:text-2xl font-bold text-accent mb-3">Sprint Planning & Capacity</h3>
+              <p className="text-gray-600 mb-4 leading-relaxed mobile-text">
                 Create sprints with team capacity in mind, assign features intelligently, and track progress with visual timelines.
               </p>
               <div className="text-sm text-indigo-600 font-semibold">→ Never overcommit again</div>
             </div>
 
             {/* Feature 3 */}
-            <div className="group bg-white p-8 rounded-2xl border border-gray-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ring-2 ring-indigo-600">
+            <div className="group bg-white p-6 sm:p-8 rounded-2xl border border-gray-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 ring-2 ring-indigo-600 mobile-card">
               <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                 <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
               <div className="inline-block px-3 py-1 bg-indigo-100 text-indigo-600 text-xs font-bold rounded-full mb-4">AI POWERED</div>
-              <h3 className="text-2xl font-bold text-accent mb-3">AI Sprint Success Prediction</h3>
-              <p className="text-gray-600 mb-4 leading-relaxed">
+              <h3 className="text-xl sm:text-2xl font-bold text-accent mb-3">AI Sprint Success Prediction</h3>
+              <p className="text-gray-600 mb-4 leading-relaxed mobile-text">
                 Get real-time success probability before committing. ML model analyzes team capacity, workload, and historical patterns.
               </p>
               <div className="text-sm text-indigo-600 font-semibold">→ Data-driven confidence</div>
@@ -166,46 +166,46 @@ const Landing = () => {
       </section>
 
       {/* How It Works Section */}
-      <section id="how-it-works" className="relative py-24 bg-white">
+      <section id="how-it-works" className="relative py-16 sm:py-20 lg:py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold text-accent mb-4">How ProdFlow AI Works</h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">Three simple steps to smarter sprint planning</p>
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-responsive-4xl font-bold text-accent mb-4">How ProdFlow AI Works</h2>
+            <p className="text-responsive-xl text-gray-600 max-w-2xl mx-auto px-4">Three simple steps to smarter sprint planning</p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 relative">
-            {/* Connecting lines */}
-            <div className="hidden md:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-200 via-indigo-400 to-indigo-200 -translate-y-1/2 z-0"></div>
+          <div className="grid grid-responsive-1 gap-6 sm:gap-8 relative">
+            {/* Connecting lines - hidden on mobile */}
+            <div className="hidden lg:block absolute top-1/2 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-200 via-indigo-400 to-indigo-200 -translate-y-1/2 z-0"></div>
 
             {/* Step 1 */}
-            <div className="relative bg-white p-8 rounded-2xl border-2 border-gray-200 z-10">
-              <div className="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mb-6 mx-auto shadow-lg">
+            <div className="relative bg-white p-6 sm:p-8 rounded-2xl border-2 border-gray-200 z-10 mobile-card">
+              <div className="w-12 sm:w-16 h-12 sm:h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 mx-auto shadow-lg">
                 1
               </div>
-              <h3 className="text-xl font-bold text-accent mb-3 text-center">Plan Product & Sprints</h3>
-              <p className="text-gray-600 text-center leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-accent mb-3 text-center">Plan Product & Sprints</h3>
+              <p className="text-gray-600 text-center leading-relaxed mobile-text">
                 Define your product vision, create features with priorities, and set up sprint parameters with team capacity.
               </p>
             </div>
 
             {/* Step 2 */}
-            <div className="relative bg-white p-8 rounded-2xl border-2 border-gray-200 z-10">
-              <div className="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mb-6 mx-auto shadow-lg">
+            <div className="relative bg-white p-6 sm:p-8 rounded-2xl border-2 border-gray-200 z-10 mobile-card">
+              <div className="w-12 sm:w-16 h-12 sm:h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 mx-auto shadow-lg">
                 2
               </div>
-              <h3 className="text-xl font-bold text-accent mb-3 text-center">Backend Processes Data</h3>
-              <p className="text-gray-600 text-center leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-accent mb-3 text-center">Backend Processes Data</h3>
+              <p className="text-gray-600 text-center leading-relaxed mobile-text">
                 Our Express.js backend aggregates sprint metrics, calculates workload distribution, and prepares data for AI analysis.
               </p>
             </div>
 
             {/* Step 3 */}
-            <div className="relative bg-white p-8 rounded-2xl border-2 border-indigo-600 z-10">
-              <div className="w-16 h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mb-6 mx-auto shadow-lg">
+            <div className="relative bg-white p-6 sm:p-8 rounded-2xl border-2 border-indigo-600 z-10 mobile-card">
+              <div className="w-12 sm:w-16 h-12 sm:h-16 bg-indigo-600 text-white rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 mx-auto shadow-lg">
                 3
               </div>
-              <h3 className="text-xl font-bold text-accent mb-3 text-center">AI Predicts Success</h3>
-              <p className="text-gray-600 text-center leading-relaxed">
+              <h3 className="text-lg sm:text-xl font-bold text-accent mb-3 text-center">AI Predicts Success</h3>
+              <p className="text-gray-600 text-center leading-relaxed mobile-text">
                 Machine learning model analyzes patterns and returns success probability (0-100%) before you commit to the sprint.
               </p>
             </div>
