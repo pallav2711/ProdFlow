@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../api/config'
 
 const SprintPlanner = () => {
   const [sprints, setSprints] = useState([])
@@ -45,8 +45,8 @@ const SprintPlanner = () => {
   const fetchData = async () => {
     try {
       const [sprintsRes, productsRes] = await Promise.all([
-        axios.get('/api/sprints'),
-        axios.get('/api/products')
+        api.get('/sprints'),
+        api.get('/products')
       ])
       const sprintsData = sprintsRes.data.sprints
       setSprints(sprintsData)
@@ -68,7 +68,7 @@ const SprintPlanner = () => {
 
   const fetchFeatures = async (productId) => {
     try {
-      const res = await axios.get(`/api/products/${productId}/features`)
+      const res = await api.get(`/products/${productId}/features`)
       // Only show backlog features
       setFeatures(res.data.features.filter(f => f.status === 'Backlog'))
     } catch (error) {
@@ -78,7 +78,7 @@ const SprintPlanner = () => {
 
   const fetchTeamMembers = async (productId) => {
     try {
-      const res = await axios.get(`/api/teams/product/${productId}`)
+      const res = await api.get(`/teams/product/${productId}`)
       // Only show active members who are developers or team leads
       const activeMembers = res.data.members.filter(m => 
         m.status === 'active' && (m.role === 'Developer' || m.role === 'Team Lead')
@@ -160,7 +160,7 @@ const SprintPlanner = () => {
     e.preventDefault()
     try {
       // Create sprint
-      const sprintRes = await axios.post('/api/sprints', sprintForm)
+      const sprintRes = await api.post('/sprints', sprintForm)
       const createdSprint = sprintRes.data.sprint
 
       // Create tasks for each feature
@@ -170,7 +170,7 @@ const SprintPlanner = () => {
         
         for (const task of tasks) {
           if (task.userId && task.workType && task.hours > 0) {
-            await axios.post(`/api/sprints/${createdSprint._id}/tasks`, {
+            await api.post(`/sprints/${createdSprint._id}/tasks`, {
               feature: featureId,
               title: `${feature.name} - ${task.workType}`,
               description: feature.description,
@@ -202,7 +202,7 @@ const SprintPlanner = () => {
 
   const selectSprint = async (sprint) => {
     try {
-      const res = await axios.get(`/api/sprints/${sprint._id}`)
+      const res = await api.get(`/sprints/${sprint._id}`)
       setSelectedSprint(res.data.sprint)
     } catch (error) {
       console.error('Error fetching sprint details:', error)
@@ -212,7 +212,7 @@ const SprintPlanner = () => {
   const handleAddTask = async (e) => {
     e.preventDefault()
     try {
-      await axios.post(`/api/sprints/${selectedSprint._id}/tasks`, taskForm)
+      await api.post(`/sprints/${selectedSprint._id}/tasks`, taskForm)
       setShowTaskModal(false)
       setTaskForm({
         feature: '',
@@ -234,7 +234,7 @@ const SprintPlanner = () => {
     }
     
     try {
-      await axios.delete(`/api/sprints/${sprintId}`)
+      await api.delete(`/sprints/${sprintId}`)
       setSelectedSprint(null)
       fetchData()
       alert('Sprint deleted successfully!')
@@ -260,7 +260,7 @@ const SprintPlanner = () => {
   const handleEditSprintSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.put(`/api/sprints/${sprintToEdit._id}`, {
+      await api.put(`/sprints/${sprintToEdit._id}`, {
         name: sprintForm.name,
         duration: sprintForm.duration,
         startDate: sprintForm.startDate,
@@ -282,7 +282,7 @@ const SprintPlanner = () => {
       fetchData()
       // Refresh selected sprint if it was the one edited
       if (selectedSprint?._id === sprintToEdit._id) {
-        const res = await axios.get(`/api/sprints/${sprintToEdit._id}`)
+        const res = await api.get(`/sprints/${sprintToEdit._id}`)
         setSelectedSprint(res.data.sprint)
       }
     } catch (error) {

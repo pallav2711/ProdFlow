@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../api/config'
 
 const ProductPlanning = () => {
   const [products, setProducts] = useState([])
@@ -42,7 +42,7 @@ const ProductPlanning = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('/api/products')
+      const res = await api.get('/products')
       setProducts(res.data.products)
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -53,7 +53,7 @@ const ProductPlanning = () => {
 
   const fetchFeatures = async (productId) => {
     try {
-      const res = await axios.get(`/api/products/${productId}/features`)
+      const res = await api.get(`/products/${productId}/features`)
       setFeatures(res.data.features)
     } catch (error) {
       console.error('Error fetching features:', error)
@@ -62,7 +62,7 @@ const ProductPlanning = () => {
 
   const fetchTeamMembers = async (productId) => {
     try {
-      const res = await axios.get(`/api/teams/product/${productId}`)
+      const res = await api.get(`/teams/product/${productId}`)
       setTeamMembers(res.data.members)
     } catch (error) {
       console.error('Error fetching team members:', error)
@@ -72,7 +72,7 @@ const ProductPlanning = () => {
   const handleInviteMember = async (e) => {
     e.preventDefault()
     try {
-      await axios.post(`/api/teams/invite`, {
+      await api.post(`/teams/invite`, {
         productId: selectedProduct._id,
         email: inviteEmail,
         role: inviteRole,
@@ -91,7 +91,7 @@ const ProductPlanning = () => {
   const handleRemoveMember = async (memberId) => {
     if (!confirm('Are you sure you want to remove this member?')) return
     try {
-      await axios.delete(`/api/teams/${memberId}`)
+      await api.delete(`/teams/${memberId}`)
       alert('Member removed successfully')
       fetchTeamMembers(selectedProduct._id)
     } catch (error) {
@@ -102,7 +102,7 @@ const ProductPlanning = () => {
   const handleProductSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.post('/api/products', productForm)
+      await api.post('/products', productForm)
       alert('Product created successfully!')
       setShowProductModal(false)
       setProductForm({ name: '', vision: '', description: '' })
@@ -125,14 +125,14 @@ const ProductPlanning = () => {
   const handleEditProductSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.put(`/api/products/${productToEdit._id}`, productForm)
+      await api.put(`/products/${productToEdit._id}`, productForm)
       alert('Product updated successfully!')
       setShowEditProductModal(false)
       setProductToEdit(null)
       setProductForm({ name: '', vision: '', description: '' })
       fetchProducts()
       if (selectedProduct?._id === productToEdit._id) {
-        const updatedProduct = await axios.get(`/api/products/${productToEdit._id}`)
+        const updatedProduct = await api.get(`/products/${productToEdit._id}`)
         setSelectedProduct(updatedProduct.data.product)
       }
     } catch (error) {
@@ -147,7 +147,7 @@ const ProductPlanning = () => {
 
   const handleDeleteProductConfirm = async () => {
     try {
-      await axios.delete(`/api/products/${productToDelete._id}`)
+      await api.delete(`/products/${productToDelete._id}`)
       setShowDeleteProductModal(false)
       setProductToDelete(null)
       if (selectedProduct?._id === productToDelete._id) {
@@ -164,7 +164,7 @@ const ProductPlanning = () => {
   const handleFeatureSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.post(`/api/products/${selectedProduct._id}/features`, featureForm)
+      await api.post(`/products/${selectedProduct._id}/features`, featureForm)
       alert('Feature created successfully!')
       setShowFeatureModal(false)
       setFeatureForm({ name: '', description: '', priority: 'Medium', businessValue: 5, estimatedEffort: 0 })
@@ -189,7 +189,7 @@ const ProductPlanning = () => {
   const handleEditFeatureSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.put(`/api/products/features/${featureToEdit._id}`, featureForm)
+      await api.put(`/products/features/${featureToEdit._id}`, featureForm)
       alert('Feature updated successfully!')
       setShowEditFeatureModal(false)
       setFeatureToEdit(null)
@@ -207,7 +207,7 @@ const ProductPlanning = () => {
 
   const handleDeleteFeatureConfirm = async () => {
     try {
-      await axios.delete(`/api/products/features/${featureToDelete._id}`)
+      await api.delete(`/products/features/${featureToDelete._id}`)
       setShowDeleteFeatureModal(false)
       setFeatureToDelete(null)
       fetchFeatures(selectedProduct._id)

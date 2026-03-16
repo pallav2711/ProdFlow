@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../api/config'
 
 const AllTeamTasks = () => {
   const [allTasks, setAllTasks] = useState([])
@@ -12,12 +12,12 @@ const AllTeamTasks = () => {
 
   const fetchAllTasks = async () => {
     try {
-      const sprintsRes = await axios.get('/api/sprints')
+      const sprintsRes = await api.get('/sprints')
       const sprintsData = sprintsRes.data.sprints
 
       // Fetch all tasks from all sprints
       const allTasksPromises = sprintsData.map(sprint =>
-        axios.get(`/api/sprints/${sprint._id}`).catch(err => {
+        api.get(`/sprints/${sprint._id}`).catch(err => {
           console.error(`Error fetching sprint ${sprint._id}:`, err)
           return { data: { sprint: { tasks: [] } } }
         })
@@ -36,7 +36,7 @@ const AllTeamTasks = () => {
 
   const handleApproveTask = async (taskId) => {
     try {
-      const response = await axios.put(`/api/sprints/tasks/${taskId}`, { 
+      const response = await api.put(`/sprints/tasks/${taskId}`, { 
         status: 'Completed',
         reviewNotes: 'Approved by Team Lead'
       })
@@ -58,7 +58,7 @@ const AllTeamTasks = () => {
     if (!reviewNotes) return
 
     try {
-      await axios.put(`/api/sprints/tasks/${taskId}/reject`, { reviewNotes })
+      await api.put(`/sprints/tasks/${taskId}/reject`, { reviewNotes })
       alert('Task sent back for revision')
       fetchAllTasks()
     } catch (error) {
@@ -68,7 +68,7 @@ const AllTeamTasks = () => {
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      const response = await axios.put(`/api/sprints/tasks/${taskId}`, { status: newStatus })
+      const response = await api.put(`/sprints/tasks/${taskId}`, { status: newStatus })
       
       if (response.data.sprintCompleted) {
         alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')

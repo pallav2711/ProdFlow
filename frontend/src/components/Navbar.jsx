@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../api/config'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
@@ -19,7 +19,7 @@ const Navbar = () => {
 
   const fetchInvitations = async () => {
     try {
-      const res = await axios.get('/api/teams/invitations')
+      const res = await api.get('/teams/invitations')
       setInvitations(res.data.invitations)
     } catch (error) {
       console.error('Error fetching invitations:', error)
@@ -28,7 +28,7 @@ const Navbar = () => {
 
   const handleAcceptInvitation = async (invitationId) => {
     try {
-      await axios.put(`/api/teams/invitations/${invitationId}/accept`)
+      await api.put(`/teams/invitations/${invitationId}/accept`)
       alert('Invitation accepted!')
       fetchInvitations()
       setShowInvitationsModal(false)
@@ -39,7 +39,7 @@ const Navbar = () => {
 
   const handleRejectInvitation = async (invitationId) => {
     try {
-      await axios.put(`/api/teams/invitations/${invitationId}/reject`)
+      await api.put(`/teams/invitations/${invitationId}/reject`)
       alert('Invitation rejected')
       fetchInvitations()
     } catch (error) {

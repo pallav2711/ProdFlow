@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import api from '../api/config'
 
 const SprintHistory = () => {
   const [products, setProducts] = useState([])
@@ -16,8 +16,8 @@ const SprintHistory = () => {
   const fetchData = async () => {
     try {
       const [productsRes, sprintsRes] = await Promise.all([
-        axios.get('/api/products'),
-        axios.get('/api/sprints')
+        api.get('/products'),
+        api.get('/sprints')
       ])
 
       const productsData = productsRes.data.products
@@ -68,7 +68,7 @@ const SprintHistory = () => {
     // Fetch sprint details if not already loaded
     if (!sprintDetails[sprintId]) {
       try {
-        const res = await axios.get(`/api/sprints/${sprintId}`)
+        const res = await api.get(`/sprints/${sprintId}`)
         setSprintDetails(prev => ({
           ...prev,
           [sprintId]: res.data

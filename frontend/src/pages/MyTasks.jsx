@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
+import api from '../api/config'
 
 const MyTasks = () => {
   const { user } = useAuth()
@@ -14,7 +14,7 @@ const MyTasks = () => {
 
   const fetchMyTasks = async () => {
     try {
-      const res = await axios.get('/api/sprints/my-tasks')
+      const res = await api.get('/sprints/my-tasks')
       setMyTasks(res.data.tasks || [])
     } catch (error) {
       console.error('Error fetching my tasks:', error)
@@ -25,7 +25,7 @@ const MyTasks = () => {
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      const response = await axios.put(`/api/sprints/tasks/${taskId}`, { status: newStatus })
+      const response = await api.put(`/sprints/tasks/${taskId}`, { status: newStatus })
       
       if (response.data.sprintCompleted) {
         alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')
