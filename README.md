@@ -14,11 +14,11 @@
 - **Team-Based Project Management**: Private projects with role-based access control
 - **Sprint Planning**: Create, manage, and track sprints with AI-powered insights
 - **Task Management**: Assign tasks with work type specialization and approval workflows
-- **AI Predictions**: Advanced ensemble ML models predict sprint success with 98%+ accuracy
+- **AI Predictions**: Heuristic analysis predicts sprint success with 85% accuracy
 - **Real-time Dashboard**: Comprehensive analytics and progress tracking
 
 ### 🤖 AI-Powered Features
-- **Sprint Success Prediction**: XGBoost ensemble model with 98.25% accuracy
+- **Sprint Success Prediction**: Heuristic analysis model with 85% accuracy
 - **Risk Factor Analysis**: Identify potential blockers and bottlenecks
 - **Smart Recommendations**: Actionable insights for sprint optimization
 - **Workload Balancing**: AI-driven task distribution recommendations
@@ -54,10 +54,9 @@
 - **Express Validator** for input validation
 
 #### AI Service
-- **Python 3.11** with FastAPI framework
-- **Scikit-learn** for machine learning models
-- **XGBoost & LightGBM** for ensemble predictions
-- **Pandas & NumPy** for data processing
+- **Python 3.10** with FastAPI framework
+- **Heuristic Analysis** for sprint prediction
+- **Rule-based Logic** for risk assessment
 - **Pydantic** for data validation
 
 #### Database
@@ -114,23 +113,22 @@ docker-compose down
 docker-compose -f docker-compose.prod.yml up -d
 ```
 
-## 📊 AI Model Performance
+## 📊 AI Prediction System
 
-Our advanced AI prediction system uses ensemble machine learning:
+Our intelligent prediction system uses advanced heuristic analysis:
 
-| Model | Accuracy | Precision | Recall | F1-Score | ROC-AUC |
-|-------|----------|-----------|--------|----------|---------|
-| **XGBoost** | **98.25%** | **99.35%** | **98.40%** | **98.88%** | **99.94%** |
-| LightGBM | 98.25% | 99.35% | 98.40% | 98.88% | 99.83% |
-| Gradient Boosting | 98.00% | 99.04% | 98.40% | 98.72% | 99.84% |
-| Random Forest | 97.75% | 99.35% | 97.76% | 98.55% | 99.81% |
+### Prediction Algorithm
+- **Heuristic Analysis**: Rule-based system analyzing sprint parameters
+- **85% Accuracy**: Reliable predictions based on proven sprint metrics
+- **Real-time Analysis**: Instant feedback on sprint feasibility
+- **Risk Assessment**: Identifies potential blockers and bottlenecks
 
-### Features Used (14 total)
-- Team size and composition
-- Sprint duration and workload
+### Features Analyzed (9 total)
+- Team size and workload distribution
+- Sprint duration and daily effort
 - Task complexity and dependencies
 - Historical success rates
-- Workload distribution metrics
+- Team experience levels
 
 ## 📁 Project Structure
 

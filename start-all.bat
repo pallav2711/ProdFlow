@@ -26,19 +26,7 @@ if not exist "ai-service\venv" (
     pause
     exit /b 1
 )
-
-if not exist "ai-service\sprint_success_model.pkl" (
-    echo ❌ AI Model not found. Training model now...
-    cd ai-service
-    call venv\Scripts\activate.bat
-    python train_model_advanced.py
-    if %errorlevel% neq 0 (
-        echo ❌ Model training failed!
-        pause
-        exit /b 1
-    )
-    cd ..
-)
+echo ✅ AI Service ready (heuristic model)
 
 echo [4/4] All checks passed! Starting services...
 echo.

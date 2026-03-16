@@ -49,19 +49,9 @@ if %errorlevel% neq 0 (
 echo ✅ AI Service dependencies installed successfully
 
 echo.
-echo [4/4] Training Advanced AI Model...
-python train_model_advanced.py
-if %errorlevel% neq 0 (
-    echo ❌ Advanced AI Model training failed!
-    echo Falling back to basic model...
-    python train_model.py
-    if %errorlevel% neq 0 (
-        echo ❌ Basic AI Model training also failed!
-        pause
-        exit /b 1
-    )
-)
-echo ✅ AI Model trained successfully
+echo [4/4] AI Service Setup Complete...
+echo ✅ AI Service dependencies installed successfully
+echo ✅ Heuristic prediction model ready
 cd ..
 
 echo.
