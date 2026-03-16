@@ -32,6 +32,28 @@ export const AuthProvider = ({ children }) => {
     try {
       const accessToken = localStorage.getItem('accessToken')
       const refreshToken = localStorage.getItem('refreshToken')
+      const oldToken = localStorage.getItem('token') || sessionStorage.getItem('token')
+      
+      console.log('Initializing auth...', { 
+        hasAccessToken: !!accessToken, 
+        hasRefreshToken: !!refreshToken,
+        hasOldToken: !!oldToken 
+      })
+      
+      // Handle old token format (backward compatibility)
+      if (oldToken && !accessToken) {
+        console.log('Found old token format, attempting to use it...')
+        api.defaults.headers.common['Authorization'] = `Bearer ${oldToken}`
+        try {
+          await loadUser()
+          console.log('Old token still valid, user loaded successfully')
+          return
+        } catch (error) {
+          console.log('Old token expired, clearing it')
+          localStorage.removeItem('token')
+          sessionStorage.removeItem('token')
+        }
+      }
       
       if (accessToken) {
         api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
@@ -40,19 +62,27 @@ export const AuthProvider = ({ children }) => {
         try {
           await loadUser()
           setupTokenRefresh()
+          console.log('Auth initialized successfully with existing token')
         } catch (error) {
+          console.log('Access token expired, attempting refresh...', error.response?.status)
+          
           // If access token is expired, try to refresh
           if (refreshToken) {
             try {
               await refreshAccessToken()
+              console.log('Token refreshed successfully')
             } catch (refreshError) {
-              // Refresh failed, clear tokens and redirect to login
+              console.log('Refresh failed, clearing tokens:', refreshError.response?.status)
+              // Refresh failed, clear tokens
               clearTokens()
             }
           } else {
+            console.log('No refresh token available, clearing tokens')
             clearTokens()
           }
         }
+      } else {
+        console.log('No access token found')
       }
     } catch (error) {
       console.error('Auth initialization error:', error)
@@ -91,20 +121,35 @@ export const AuthProvider = ({ children }) => {
       throw new Error('No refresh token available')
     }
 
-    const res = await api.post('/auth/refresh', { refreshToken })
-    const { accessToken, user } = res.data
-    
-    localStorage.setItem('accessToken', accessToken)
-    api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
-    setUser(user)
-    
-    return res.data
+    try {
+      console.log('Attempting to refresh access token...')
+      const res = await api.post('/auth/refresh', { refreshToken })
+      const { accessToken, user } = res.data
+      
+      localStorage.setItem('accessToken', accessToken)
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+      setUser(user)
+      
+      console.log('Access token refreshed successfully')
+      return res.data
+    } catch (error) {
+      console.error('Token refresh failed:', error.response?.data || error.message)
+      // If refresh fails, clear all tokens
+      clearTokens()
+      throw error
+    }
   }
 
   const clearTokens = () => {
+    // Clear new token format
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('rememberMe')
+    
+    // Clear old token format (backward compatibility)
+    localStorage.removeItem('token')
+    sessionStorage.removeItem('token')
+    
     delete api.defaults.headers.common['Authorization']
     setUser(null)
     
@@ -112,29 +157,41 @@ export const AuthProvider = ({ children }) => {
       clearInterval(refreshInterval)
       refreshInterval = null
     }
+    
+    console.log('All tokens cleared')
   }
 
   const login = async (email, password, rememberMe = true) => {
-    const res = await api.post('/auth/login', { email, password, rememberMe })
-    const { accessToken, refreshToken, user } = res.data
-    
-    // Store tokens based on rememberMe preference
-    if (rememberMe && refreshToken) {
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('refreshToken', refreshToken)
-      localStorage.setItem('rememberMe', 'true')
-      setupTokenRefresh()
-    } else {
-      // For session-only login, still use localStorage but clear on browser close
-      localStorage.setItem('accessToken', accessToken)
-      localStorage.setItem('rememberMe', 'false')
-      // Don't store refresh token for session-only login
+    try {
+      const res = await api.post('/auth/login', { email, password, rememberMe })
+      const { accessToken, refreshToken, user } = res.data
+      
+      console.log('Login successful', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, rememberMe })
+      
+      // Clear any existing tokens first
+      clearTokens()
+      
+      // Store tokens based on rememberMe preference
+      if (rememberMe && refreshToken) {
+        localStorage.setItem('accessToken', accessToken)
+        localStorage.setItem('refreshToken', refreshToken)
+        localStorage.setItem('rememberMe', 'true')
+        setupTokenRefresh()
+      } else {
+        // For session-only login, still use localStorage but clear on browser close
+        localStorage.setItem('accessToken', accessToken)
+        localStorage.setItem('rememberMe', 'false')
+        // Don't store refresh token for session-only login
+      }
+      
+      api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
+      setUser(user)
+      
+      return res.data
+    } catch (error) {
+      console.error('Login error:', error.response?.data || error.message)
+      throw error
     }
-    
-    api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
-    setUser(user)
-    
-    return res.data
   }
 
   const register = async (name, email, password, role) => {

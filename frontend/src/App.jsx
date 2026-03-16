@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider } from './context/AuthContext'
 import PrivateRoute from './components/PrivateRoute'
 import Navbar from './components/Navbar'
+import AuthDebug from './components/AuthDebug'
+import ErrorBoundary from './components/ErrorBoundary'
 import Landing from './pages/Landing'
 import Login from './pages/Login'
 import Register from './pages/Register'
@@ -65,17 +67,22 @@ function AppContent() {
         
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+      
+      {/* Debug component - remove in production */}
+      {process.env.NODE_ENV === 'development' && <AuthDebug />}
     </div>
   )
 }
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <AppContent />
-      </Router>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <Router>
+          <AppContent />
+        </Router>
+      </AuthProvider>
+    </ErrorBoundary>
   )
 }
 
