@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import axios from 'axios'
+import api from '../api/config'
 
 const Dashboard = () => {
   const { user } = useAuth()
@@ -26,9 +26,9 @@ const Dashboard = () => {
   const fetchDashboardData = async () => {
     try {
       const [sprintsRes, productsRes, myTasksRes] = await Promise.all([
-        axios.get('/api/sprints'),
-        axios.get('/api/products'),
-        axios.get('/api/sprints/my-tasks')
+        api.get('/sprints'),
+        api.get('/products'),
+        api.get('/sprints/my-tasks')
       ])
       
       const sprintsData = sprintsRes.data.sprints
@@ -36,7 +36,7 @@ const Dashboard = () => {
 
       // Fetch all tasks from all sprints for "All Team Tasks" tab
       const allTasksPromises = sprintsData.map(sprint =>
-        axios.get(`/api/sprints/${sprint._id}`).catch(err => {
+        api.get(`/sprints/${sprint._id}`).catch(err => {
           console.error(`Error fetching sprint ${sprint._id}:`, err)
           return { data: { tasks: [] } }
         })
@@ -71,7 +71,7 @@ const Dashboard = () => {
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      const response = await axios.put(`/api/sprints/tasks/${taskId}`, { status: newStatus })
+      const response = await api.put(`/sprints/tasks/${taskId}`, { status: newStatus })
       
       if (response.data.sprintCompleted) {
         alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')
@@ -87,7 +87,7 @@ const Dashboard = () => {
 
   const handleApproveTask = async (taskId) => {
     try {
-      const response = await axios.put(`/api/sprints/tasks/${taskId}`, { 
+      const response = await api.put(`/sprints/tasks/${taskId}`, { 
         status: 'Completed',
         reviewNotes: 'Approved by Team Lead'
       })
@@ -109,7 +109,7 @@ const Dashboard = () => {
     if (!reviewNotes) return
 
     try {
-      await axios.put(`/api/sprints/tasks/${taskId}/reject`, { reviewNotes })
+      await api.put(`/sprints/tasks/${taskId}/reject`, { reviewNotes })
       alert('Task sent back for revision')
       fetchDashboardData()
     } catch (error) {
@@ -444,7 +444,7 @@ const Dashboard = () => {
 
       setLoading(true)
       try {
-        const res = await axios.get(`/api/sprints/${sprint._id}`)
+        const res = await api.get(`/sprints/${sprint._id}`)
         setSprintDetails(res.data)
         setExpanded(true)
       } catch (error) {
