@@ -1,25 +1,36 @@
 """
-ProdFlow AI - Ultra Simple AI Service (No Dependencies)
+ProdFlow AI - Ultra Fast AI Service (Optimized for Free Hosting)
 FastAPI service for sprint success prediction using simple heuristics
 """
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 import os
 from typing import Optional, Dict, Any, List
 from dotenv import load_dotenv
 import json
+import time
+import asyncio
+from functools import lru_cache
 
 # Load environment variables
 load_dotenv()
 
+# Create FastAPI app with optimized settings
 app = FastAPI(
     title="ProdFlow AI Service",
-    version="2.0.0",
-    description="Sprint Success Prediction using Heuristic Analysis"
+    version="2.1.0",
+    description="Sprint Success Prediction using Heuristic Analysis - Optimized for Performance",
+    docs_url="/docs" if os.getenv('ENVIRONMENT') != 'production' else None,
+    redoc_url="/redoc" if os.getenv('ENVIRONMENT') != 'production' else None
 )
 
-# Enable CORS
+# Add compression middleware for better performance
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
+# Enable CORS with optimized settings
 cors_origins_str = os.getenv('CORS_ORIGINS', '["*"]')
 try:
     cors_origins = json.loads(cors_origins_str)
@@ -30,13 +41,19 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],  # Only allow needed methods
+    allow_headers=["Content-Type", "Authorization", "Accept", "Accept-Encoding"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
+# Cache for predictions to reduce computation
+prediction_cache = {}
+CACHE_TTL = 300  # 5 minutes cache
 
-def validate_sprint_data(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Validate and set defaults for sprint data"""
+@lru_cache(maxsize=128)
+def validate_sprint_data(data_str: str) -> Dict[str, Any]:
+    """Validate and set defaults for sprint data with caching"""
+    data = json.loads(data_str)
     validated = {}
     
     # Required fields
@@ -54,9 +71,10 @@ def validate_sprint_data(data: Dict[str, Any]) -> Dict[str, Any]:
     
     return validated
 
-
-def calculate_heuristic_prediction(data: Dict[str, Any]) -> float:
-    """Calculate sprint success probability using simple heuristics"""
+@lru_cache(maxsize=256)
+def calculate_heuristic_prediction(data_hash: str) -> float:
+    """Calculate sprint success probability using simple heuristics with caching"""
+    data = json.loads(data_hash)
     
     # Calculate derived metrics
     tasks_per_person = data['total_tasks'] / data['team_size']
@@ -114,7 +132,6 @@ def calculate_heuristic_prediction(data: Dict[str, Any]) -> float:
     
     return score
 
-
 def analyze_risk_factors(data: Dict[str, Any]) -> List[str]:
     """Identify potential risk factors"""
     risks = []
@@ -124,13 +141,13 @@ def analyze_risk_factors(data: Dict[str, Any]) -> List[str]:
     effort_per_day = data['estimated_effort'] / data['sprint_duration']
     
     if tasks_per_person > 8:
-        risks.append(f"High task load: {tasks_per_person:.1f} tasks per person (optimal: 3-7)")
+        risks.append(f"High task load: {tasks_per_person:.1f} tasks per person")
     
     if effort_per_person > 80:
-        risks.append(f"High effort per person: {effort_per_person:.1f} hours (optimal: 20-80)")
+        risks.append(f"High effort per person: {effort_per_person:.1f} hours")
     
     if effort_per_day > 15:
-        risks.append(f"High daily effort: {effort_per_day:.1f} hours/day (optimal: 5-15)")
+        risks.append(f"High daily effort: {effort_per_day:.1f} hours/day")
     
     if data['avg_task_complexity'] > 7:
         risks.append(f"High task complexity: {data['avg_task_complexity']:.1f}/10")
@@ -152,7 +169,6 @@ def analyze_risk_factors(data: Dict[str, Any]) -> List[str]:
     
     return risks
 
-
 def generate_recommendations(data: Dict[str, Any], risks: List[str]) -> List[str]:
     """Generate actionable recommendations"""
     recommendations = []
@@ -167,65 +183,111 @@ def generate_recommendations(data: Dict[str, Any], risks: List[str]) -> List[str
         recommendations.append("Reduce estimated effort or extend sprint duration")
     
     if data['avg_task_complexity'] > 7:
-        recommendations.append("Break down complex tasks into smaller, manageable pieces")
+        recommendations.append("Break down complex tasks into smaller pieces")
     
     if data['team_experience'] < 1:
-        recommendations.append("Pair junior developers with experienced team members")
+        recommendations.append("Pair junior developers with experienced members")
     
     if data['dependencies_count'] > data['total_tasks'] * 0.3:
-        recommendations.append("Review and minimize task dependencies to reduce blockers")
+        recommendations.append("Review and minimize task dependencies")
     
     if data['sprint_duration'] not in [10, 14]:
-        recommendations.append("Consider using standard 2-week (14 days) sprint duration")
+        recommendations.append("Consider using standard 2-week sprint duration")
     
     if len(risks) == 0:
-        recommendations.append("Sprint parameters look good! Maintain current planning approach")
+        recommendations.append("Sprint parameters look good!")
     
     if data['past_sprint_success_rate'] < 0.6:
-        recommendations.append("Review past sprint retrospectives to identify improvement areas")
+        recommendations.append("Review past retrospectives for improvements")
     
     return recommendations
 
+# Startup event to warm up the service
+@app.on_event("startup")
+async def startup_event():
+    """Warm up the service to reduce cold start times"""
+    print("🔥 Warming up AI service...")
+    
+    # Warm up with sample data
+    sample_data = {
+        'total_tasks': 10,
+        'sprint_duration': 14,
+        'team_size': 5,
+        'estimated_effort': 100,
+        'avg_task_complexity': 5.0,
+        'team_experience': 2.0,
+        'past_sprint_success_rate': 0.7,
+        'priority_high_ratio': 0.3,
+        'dependencies_count': 2
+    }
+    
+    # Pre-compute some predictions to warm up cache
+    data_str = json.dumps(sample_data, sort_keys=True)
+    validate_sprint_data(data_str)
+    calculate_heuristic_prediction(data_str)
+    
+    print("✅ AI service warmed up and ready!")
 
 @app.get("/")
-def read_root():
+async def read_root():
     """Health check endpoint"""
-    return {
+    return JSONResponse({
         "service": "ProdFlow AI Service",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "environment": os.getenv('ENVIRONMENT', 'development'),
         "status": "running",
         "model_loaded": True,
-        "model_name": "Heuristic Analysis Model"
-    }
-
+        "model_name": "Optimized Heuristic Analysis",
+        "performance": "High-speed optimized for free hosting"
+    })
 
 @app.get("/health")
-def health_check():
+async def health_check():
     """Detailed health check"""
-    return {
+    return JSONResponse({
         "status": "healthy",
         "environment": os.getenv('ENVIRONMENT', 'development'),
         "model_loaded": True,
         "model_type": "heuristic",
+        "cache_size": len(prediction_cache),
+        "uptime": time.time(),
         "features_enabled": {
             "detailed_predictions": True,
-            "model_info_endpoint": True
+            "caching": True,
+            "compression": True
         }
-    }
+    })
 
+@app.get("/ping")
+async def ping():
+    """Ultra-fast ping endpoint for monitoring"""
+    return JSONResponse({"status": "ok", "timestamp": time.time()})
 
 @app.post("/ai/sprint-success")
-def predict_sprint_success(request_data: Dict[str, Any]):
+async def predict_sprint_success(request_data: Dict[str, Any]):
     """
-    Predict sprint success probability using heuristic analysis
+    Predict sprint success probability using optimized heuristic analysis
     """
     try:
-        # Validate input data
-        data = validate_sprint_data(request_data)
+        start_time = time.time()
         
-        # Calculate prediction using heuristics
-        success_percentage = calculate_heuristic_prediction(data)
+        # Create cache key
+        cache_key = json.dumps(request_data, sort_keys=True)
+        
+        # Check cache first
+        if cache_key in prediction_cache:
+            cache_entry = prediction_cache[cache_key]
+            if time.time() - cache_entry['timestamp'] < CACHE_TTL:
+                cache_entry['response']['processing_time'] = time.time() - start_time
+                cache_entry['response']['cached'] = True
+                return JSONResponse(cache_entry['response'])
+        
+        # Validate input data
+        data_str = json.dumps(request_data, sort_keys=True)
+        data = validate_sprint_data(data_str)
+        
+        # Calculate prediction using cached heuristics
+        success_percentage = calculate_heuristic_prediction(json.dumps(data, sort_keys=True))
         prediction = 1 if success_percentage >= 50 else 0
         
         # Determine confidence level
@@ -241,37 +303,71 @@ def predict_sprint_success(request_data: Dict[str, Any]):
         recommendations = generate_recommendations(data, risks)
         
         # Prepare response
-        return {
+        response = {
             "success_probability": success_percentage,
             "prediction": "Success" if prediction == 1 else "Likely to Fail",
             "confidence": confidence,
             "risk_factors": risks if risks else ["No significant risks identified"],
             "recommendations": recommendations,
             "model_info": {
-                "model_name": "Heuristic Analysis Model",
+                "model_name": "Optimized Heuristic Analysis",
                 "accuracy": "85.00%",
-                "features_used": 9
-            }
+                "features_used": 9,
+                "version": "2.1.0"
+            },
+            "processing_time": time.time() - start_time,
+            "cached": False
         }
+        
+        # Cache the response
+        prediction_cache[cache_key] = {
+            'response': response.copy(),
+            'timestamp': time.time()
+        }
+        
+        # Clean old cache entries if cache is too large
+        if len(prediction_cache) > 100:
+            oldest_key = min(prediction_cache.keys(), 
+                           key=lambda k: prediction_cache[k]['timestamp'])
+            del prediction_cache[oldest_key]
+        
+        return JSONResponse(response)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
 
-
 @app.post("/ai/sprint-success/simple")
-def predict_sprint_success_simple(request_data: Dict[str, Any]):
+async def predict_sprint_success_simple(request_data: Dict[str, Any]):
     """
-    Simple prediction endpoint (backward compatible)
+    Simple prediction endpoint (backward compatible) - Ultra fast
     Returns only success probability
     """
     try:
-        data = validate_sprint_data(request_data)
-        success_percentage = calculate_heuristic_prediction(data)
-        return {"success_probability": success_percentage}
+        # Create cache key
+        cache_key = f"simple_{json.dumps(request_data, sort_keys=True)}"
+        
+        # Check cache first
+        if cache_key in prediction_cache:
+            cache_entry = prediction_cache[cache_key]
+            if time.time() - cache_entry['timestamp'] < CACHE_TTL:
+                return JSONResponse(cache_entry['response'])
+        
+        data_str = json.dumps(request_data, sort_keys=True)
+        data = validate_sprint_data(data_str)
+        success_percentage = calculate_heuristic_prediction(json.dumps(data, sort_keys=True))
+        
+        response = {"success_probability": success_percentage}
+        
+        # Cache the response
+        prediction_cache[cache_key] = {
+            'response': response,
+            'timestamp': time.time()
+        }
+        
+        return JSONResponse(response)
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Prediction error: {str(e)}")
-
 
 if __name__ == "__main__":
     import uvicorn
@@ -280,10 +376,20 @@ if __name__ == "__main__":
     port = int(os.getenv('PORT', 8000))
     
     print("=" * 80)
-    print(f"🚀 Starting ProdFlow AI Service v2.0.0")
+    print(f"🚀 Starting ProdFlow AI Service v2.1.0 (Performance Optimized)")
     print(f"   Environment: {os.getenv('ENVIRONMENT', 'development')}")
     print(f"   Host: {host}:{port}")
-    print(f"   Model: Heuristic Analysis (Zero Dependencies)")
+    print(f"   Model: Optimized Heuristic Analysis")
+    print(f"   Features: Caching, Compression, Fast Startup")
     print("=" * 80)
     
-    uvicorn.run(app, host=host, port=port)
+    uvicorn.run(
+        app, 
+        host=host, 
+        port=port,
+        # Performance optimizations
+        loop="uvloop" if os.name != 'nt' else "asyncio",
+        http="httptools" if os.name != 'nt' else "h11",
+        access_log=False,  # Disable access logs for better performance
+        log_level="warning" if os.getenv('ENVIRONMENT') == 'production' else "info"
+    )

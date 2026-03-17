@@ -11,5 +11,34 @@ export default defineConfig({
         changeOrigin: true
       }
     }
+  },
+  build: {
+    // Enable code splitting and optimization
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate vendor chunks for better caching
+          vendor: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          utils: ['axios']
+        }
+      }
+    },
+    // Enable minification and compression
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.logs in production
+        drop_debugger: true
+      }
+    },
+    // Optimize chunk size
+    chunkSizeWarningLimit: 1000,
+    // Enable source maps for debugging (can be disabled for smaller builds)
+    sourcemap: false
+  },
+  // Enable dependency pre-bundling for faster dev server
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom', 'axios']
   }
 })
