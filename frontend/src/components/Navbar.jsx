@@ -78,7 +78,7 @@ const Navbar = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-6 xl:space-x-8">
+            <div className="hidden lg:flex items-center space-x-4 xl:space-x-6">
               {user ? (
                 <>
                   <Link to="/dashboard" className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
@@ -130,7 +130,7 @@ const Navbar = () => {
                   
                   <button
                     onClick={handleLogout}
-                    className="bg-accent text-white px-4 xl:px-5 py-2 rounded-lg hover:bg-gray-800 transition-all hover:shadow-lg text-sm font-medium touch-target"
+                    className="bg-accent text-white px-4 xl:px-5 py-2.5 rounded-lg hover:bg-gray-800 transition-all hover:shadow-lg text-sm font-medium touch-target"
                   >
                     Logout
                   </button>
@@ -139,23 +139,33 @@ const Navbar = () => {
                 <>
                   {isLanding && (
                     <>
-                      <button onClick={() => scrollToSection('features')} className="text-gray-700 hover:text-accent transition-colors text-sm font-medium touch-target">
+                      <button onClick={() => scrollToSection('features')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
                         Features
                       </button>
-                      <button onClick={() => scrollToSection('how-it-works')} className="text-gray-700 hover:text-accent transition-colors text-sm font-medium touch-target">
+                      <button onClick={() => scrollToSection('how-it-works')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
                         How It Works
                       </button>
-                      <button onClick={() => scrollToSection('ai-powered')} className="text-gray-700 hover:text-accent transition-colors text-sm font-medium touch-target">
+                      <button onClick={() => scrollToSection('ai-powered')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
                         AI Technology
                       </button>
                     </>
                   )}
-                  <Link to="/login" className="text-gray-700 hover:text-accent transition-colors text-sm font-medium touch-target">
-                    Login
-                  </Link>
-                  <Link to="/register" className="bg-accent text-white px-4 xl:px-5 py-2 rounded-lg hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5 text-sm font-medium touch-target">
-                    Start Free
-                  </Link>
+                  
+                  {/* Auth Buttons Container */}
+                  <div className="flex items-center space-x-3">
+                    <Link 
+                      to="/login" 
+                      className="text-gray-700 hover:text-accent transition-colors px-4 py-2.5 text-sm font-medium touch-target rounded-lg hover:bg-gray-50"
+                    >
+                      Login
+                    </Link>
+                    <Link 
+                      to="/register" 
+                      className="bg-accent text-white px-5 py-2.5 rounded-lg hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5 text-sm font-medium touch-target whitespace-nowrap"
+                    >
+                      Start Free
+                    </Link>
+                  </div>
                 </>
               )}
             </div>
