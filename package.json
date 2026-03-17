@@ -1,0 +1,21 @@
+{
+  "name": "prodflow-ai-performance-tools",
+  "version": "1.0.0",
+  "description": "Performance monitoring and optimization tools for ProdFlow AI",
+  "main": "performance-monitor.js",
+  "scripts": {
+    "performance": "node performance-monitor.js",
+    "keep-alive": "node keep-alive.js",
+    "monitor": "node performance-monitor.js && node keep-alive.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": ["performance", "monitoring", "optimization", "prodflow"],
+  "author": "ProdFlow AI Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.6.2"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  }
+}
