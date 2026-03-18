@@ -383,38 +383,12 @@ if __name__ == "__main__":
     print(f"   Features: Caching, Compression, Fast Startup")
     print("=" * 80)
     
-    # Determine the best event loop and HTTP implementation
-    loop_type = "asyncio"  # Default fallback
-    http_type = "h11"      # Default fallback
-    
-    # Try to use uvloop for better performance (Unix systems only)
-    if os.name != 'nt':  # Not Windows
-        try:
-            import uvloop
-            loop_type = "uvloop"
-        except ImportError:
-            print("⚠️  uvloop not available, using asyncio")
-            loop_type = "asyncio"
-    
-    # Try to use httptools for better performance
-    try:
-        import httptools
-        if os.name != 'nt':  # Not Windows
-            http_type = "httptools"
-    except ImportError:
-        print("⚠️  httptools not available, using h11")
-        http_type = "h11"
-    
-    print(f"   Event Loop: {loop_type}")
-    print(f"   HTTP Parser: {http_type}")
-    
+    # Use standard uvicorn configuration for maximum compatibility
     uvicorn.run(
         app, 
         host=host, 
         port=port,
-        # Performance optimizations with fallbacks
-        loop=loop_type,
-        http=http_type,
+        # Standard configuration for deployment compatibility
         access_log=False,  # Disable access logs for better performance
         log_level="warning" if os.getenv('ENVIRONMENT') == 'production' else "info"
     )
