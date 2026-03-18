@@ -32,8 +32,7 @@ const connectDB = async () => {
       serverSelectionTimeoutMS: 5000, // How long to try selecting a server
       socketTimeoutMS: 45000, // How long to wait for a response
       
-      // Buffering settings
-      bufferMaxEntries: 0, // Disable mongoose buffering
+      // Buffering settings (updated for newer MongoDB driver)
       bufferCommands: false, // Disable mongoose buffering
       
       // Heartbeat settings

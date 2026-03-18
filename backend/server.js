@@ -16,14 +16,20 @@ const connectDB = require('./config/database');
 // Load environment variables from .env file
 const envPath = path.join(__dirname, '.env');
 console.log('🔧 Loading environment from:', envPath);
-const result = dotenv.config({ path: envPath });
 
-if (result.error) {
-  console.error('❌ Error loading .env file:', result.error);
-  console.log('📁 Current working directory:', process.cwd());
-  console.log('📁 __dirname:', __dirname);
+// In production, environment variables are set by the hosting platform
+// so .env file might not exist - this is normal
+if (process.env.NODE_ENV === 'production') {
+  console.log('🏭 Production environment detected - using platform environment variables');
 } else {
-  console.log('✅ Environment variables loaded successfully');
+  const result = dotenv.config({ path: envPath });
+  if (result.error) {
+    console.error('❌ Error loading .env file:', result.error);
+    console.log('📁 Current working directory:', process.cwd());
+    console.log('📁 __dirname:', __dirname);
+  } else {
+    console.log('✅ Environment variables loaded successfully');
+  }
 }
 
 // Debug: Log important environment variables (without sensitive data)
