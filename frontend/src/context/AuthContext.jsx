@@ -30,14 +30,20 @@ export const AuthProvider = ({ children }) => {
 
   const initializeAuth = async () => {
     try {
-      const accessToken = localStorage.getItem('accessToken')
+      // Check both localStorage (persistent) and sessionStorage (session-only)
+      const persistentAccessToken = localStorage.getItem('accessToken')
+      const sessionAccessToken = sessionStorage.getItem('accessToken')
       const refreshToken = localStorage.getItem('refreshToken')
       const oldToken = localStorage.getItem('token') || sessionStorage.getItem('token')
+      
+      const accessToken = persistentAccessToken || sessionAccessToken
+      const isSessionOnly = !!sessionAccessToken && !persistentAccessToken
       
       console.log('Initializing auth...', { 
         hasAccessToken: !!accessToken, 
         hasRefreshToken: !!refreshToken,
-        hasOldToken: !!oldToken 
+        hasOldToken: !!oldToken,
+        isSessionOnly
       })
       
       // Handle old token format (backward compatibility)
@@ -61,13 +67,18 @@ export const AuthProvider = ({ children }) => {
         // Try to load user with current token
         try {
           await loadUser()
-          setupTokenRefresh()
+          
+          // Only setup token refresh for persistent sessions
+          if (!isSessionOnly && refreshToken) {
+            setupTokenRefresh()
+          }
+          
           console.log('Auth initialized successfully with existing token')
         } catch (error) {
           console.log('Access token expired, attempting refresh...', error.response?.status)
           
-          // If access token is expired, try to refresh
-          if (refreshToken) {
+          // If access token is expired, try to refresh (only for persistent sessions)
+          if (refreshToken && !isSessionOnly) {
             try {
               await refreshAccessToken()
               console.log('Token refreshed successfully')
@@ -77,7 +88,7 @@ export const AuthProvider = ({ children }) => {
               clearTokens()
             }
           } else {
-            console.log('No refresh token available, clearing tokens')
+            console.log('No refresh token available or session-only login, clearing tokens')
             clearTokens()
           }
         }
@@ -141,10 +152,12 @@ export const AuthProvider = ({ children }) => {
   }
 
   const clearTokens = () => {
-    // Clear new token format
+    // Clear both localStorage and sessionStorage tokens
     localStorage.removeItem('accessToken')
     localStorage.removeItem('refreshToken')
     localStorage.removeItem('rememberMe')
+    sessionStorage.removeItem('accessToken')
+    sessionStorage.removeItem('rememberMe')
     
     // Clear old token format (backward compatibility)
     localStorage.removeItem('token')
@@ -161,7 +174,7 @@ export const AuthProvider = ({ children }) => {
     console.log('All tokens cleared')
   }
 
-  const login = async (email, password, rememberMe = true) => {
+  const login = async (email, password, rememberMe = false) => {
     try {
       const res = await api.post('/auth/login', { email, password, rememberMe })
       const { accessToken, refreshToken, user } = res.data
@@ -173,15 +186,17 @@ export const AuthProvider = ({ children }) => {
       
       // Store tokens based on rememberMe preference
       if (rememberMe && refreshToken) {
+        // Persistent storage - survives browser close
         localStorage.setItem('accessToken', accessToken)
         localStorage.setItem('refreshToken', refreshToken)
         localStorage.setItem('rememberMe', 'true')
         setupTokenRefresh()
       } else {
-        // For session-only login, still use localStorage but clear on browser close
-        localStorage.setItem('accessToken', accessToken)
-        localStorage.setItem('rememberMe', 'false')
+        // Session storage - clears when browser/tab is closed
+        sessionStorage.setItem('accessToken', accessToken)
+        sessionStorage.setItem('rememberMe', 'false')
         // Don't store refresh token for session-only login
+        // Don't setup auto-refresh for session-only login
       }
       
       api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
@@ -198,14 +213,12 @@ export const AuthProvider = ({ children }) => {
     const res = await api.post('/auth/register', { name, email, password, role })
     const { accessToken, refreshToken, user } = res.data
     
-    // Default to remember me for new registrations
-    localStorage.setItem('accessToken', accessToken)
-    localStorage.setItem('refreshToken', refreshToken)
-    localStorage.setItem('rememberMe', 'true')
+    // Default to session-only for new registrations (more secure)
+    sessionStorage.setItem('accessToken', accessToken)
+    sessionStorage.setItem('rememberMe', 'false')
     
     api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
     setUser(user)
-    setupTokenRefresh()
     
     return res.data
   }

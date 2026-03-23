@@ -6,7 +6,7 @@ const Login = () => {
   const [formData, setFormData] = useState({ 
     email: '', 
     password: '', 
-    rememberMe: true 
+    rememberMe: false  // Default to false for better security
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

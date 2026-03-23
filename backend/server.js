@@ -48,11 +48,57 @@ connectDB();
 
 // Performance and Security Middleware
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP for now to avoid conflicts
-  crossOriginEmbedderPolicy: false
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      fontSrc: ["'self'"],
+      objectSrc: ["'none'"],
+      mediaSrc: ["'self'"],
+      frameSrc: ["'none'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false,
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
-// Enable compression for all responses
+// Additional security middleware
+app.use((req, res, next) => {
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+  
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Enable XSS protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // Referrer Policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Feature Policy
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  
+  next();
+});
+
+// Prevent parameter pollution
+app.use((req, res, next) => {
+  // Ensure query parameters are not arrays (prevent HPP attacks)
+  for (const key in req.query) {
+    if (Array.isArray(req.query[key])) {
+      req.query[key] = req.query[key][0]; // Take only the first value
+    }
+  }
+  next();
+});
 app.use(compression({
   level: 6, // Compression level (1-9, 6 is good balance)
   threshold: 1024, // Only compress responses larger than 1KB
@@ -67,7 +113,7 @@ app.use(compression({
 // Rate limiting to prevent abuse
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Limit each IP to 100 requests per windowMs in production
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Limit each IP to 100 requests per windowMs in production, 1000 in development
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
@@ -92,9 +138,75 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-// Body parsing middleware with size limits
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing middleware with size limits and validation
+app.use(express.json({ 
+  limit: '1mb',
+  verify: (req, res, buf) => {
+    // Prevent JSON pollution attacks
+    try {
+      JSON.parse(buf);
+    } catch (e) {
+      res.status(400).json({ success: false, message: 'Invalid JSON format' });
+      return;
+    }
+  }
+}));
+app.use(express.urlencoded({ 
+  extended: true, 
+  limit: '1mb',
+  parameterLimit: 20 // Limit number of parameters
+}));
+
+// Input sanitization middleware
+app.use((req, res, next) => {
+  // Sanitize request body
+  if (req.body) {
+    req.body = sanitizeObject(req.body);
+  }
+  // Sanitize query parameters
+  if (req.query) {
+    req.query = sanitizeObject(req.query);
+  }
+  next();
+});
+
+// Sanitization function
+function sanitizeObject(obj) {
+  if (typeof obj !== 'object' || obj === null) {
+    return typeof obj === 'string' ? sanitizeString(obj) : obj;
+  }
+  
+  const sanitized = {};
+  for (const [key, value] of Object.entries(obj)) {
+    const sanitizedKey = sanitizeString(key);
+    if (typeof value === 'object' && value !== null) {
+      sanitized[sanitizedKey] = sanitizeObject(value);
+    } else if (typeof value === 'string') {
+      sanitized[sanitizedKey] = sanitizeString(value);
+    } else {
+      sanitized[sanitizedKey] = value;
+    }
+  }
+  return sanitized;
+}
+
+function sanitizeString(str) {
+  if (typeof str !== 'string') return str;
+  
+  return str
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove script tags
+    .replace(/javascript:/gi, '') // Remove javascript: protocol
+    .replace(/on\w+\s*=/gi, '') // Remove event handlers
+    .replace(/[<>'"]/g, (match) => { // Escape HTML characters
+      const htmlEntities = {
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#x27;'
+      };
+      return htmlEntities[match];
+    });
+}
 
 // Request logging in development
 if (process.env.NODE_ENV !== 'production') {

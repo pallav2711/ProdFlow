@@ -134,31 +134,34 @@ Our intelligent prediction system uses advanced heuristic analysis:
 
 ```
 prodflow-ai/
-├── frontend/                 # React frontend application
+├── docs/                    # 📚 Documentation
+│   ├── ARCHITECTURE.md     # System architecture overview
+│   ├── AUTHENTICATION.md   # Auth system documentation
+│   ├── DEPLOYMENT.md       # Complete deployment guide
+│   ├── PERFORMANCE.md      # Performance optimization tips
+│   └── TESTING.md          # Testing strategies & scenarios
+├── frontend/                # ⚛️ React frontend application
 │   ├── src/
 │   │   ├── components/      # Reusable UI components
 │   │   ├── pages/          # Application pages
 │   │   ├── context/        # React context providers
-│   │   └── ...
-│   ├── Dockerfile          # Frontend container config
-│   └── package.json
-├── backend/                 # Node.js backend API
+│   │   └── api/            # API configuration
+│   └── Dockerfile          # Frontend container config
+├── backend/                 # 🚀 Node.js backend API
 │   ├── controllers/        # Route controllers
 │   ├── models/            # MongoDB models
 │   ├── routes/            # API routes
 │   ├── middleware/        # Custom middleware
-│   ├── Dockerfile         # Backend container config
-│   └── package.json
-├── ai-service/             # Python AI/ML service
+│   └── Dockerfile         # Backend container config
+├── ai-service/             # 🤖 Python AI/ML service
 │   ├── main.py            # FastAPI application
-│   ├── train_model_advanced.py  # ML model training
 │   ├── requirements.txt   # Python dependencies
 │   └── Dockerfile         # AI service container config
-├── PROJECT_DOCUMENTATION/ # Academic documentation
-├── docker-compose.yml     # Development containers
-├── docker-compose.prod.yml # Production containers
-├── DEPLOYMENT.md          # Deployment guide
-└── README.md             # This file
+├── nginx/                  # 🌐 Nginx configuration
+├── docker-compose.yml      # 🐳 Development containers
+├── docker-compose.prod.yml # 🐳 Production containers
+├── mongo-init.js          # 🗄️ Database initialization
+└── README.md              # 📖 Main documentation
 ```
 
 ## 🔧 Configuration
@@ -261,7 +264,7 @@ Full API documentation is available in `backend/API.md`.
 - **PM2**: Process management for Node.js
 - **Nginx**: Reverse proxy and load balancing
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for detailed deployment instructions.
+See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment instructions.
 
 ## 🤝 Contributing
 
@@ -287,8 +290,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 For support and questions:
 - Create an issue in the repository
-- Check the [DEPLOYMENT.md](DEPLOYMENT.md) for troubleshooting
-- Review the API documentation in `backend/API.md`
+- Check [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment help
+- Review [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system overview
+- See [docs/TESTING.md](docs/TESTING.md) for testing strategies
+- Check [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for optimization tips
+- Review [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) for auth setup
+- See API documentation in `backend/API.md`
 
 ---
 

@@ -53,21 +53,44 @@ CACHE_TTL = 300  # 5 minutes cache
 @lru_cache(maxsize=128)
 def validate_sprint_data(data_str: str) -> Dict[str, Any]:
     """Validate and set defaults for sprint data with caching"""
-    data = json.loads(data_str)
+    try:
+        data = json.loads(data_str)
+    except (json.JSONDecodeError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid JSON format")
+    
     validated = {}
     
-    # Required fields
-    validated['total_tasks'] = max(1, min(100, int(data.get('total_tasks', 10))))
-    validated['sprint_duration'] = max(1, min(30, int(data.get('sprint_duration', 14))))
-    validated['team_size'] = max(1, min(20, int(data.get('team_size', 5))))
-    validated['estimated_effort'] = max(1, min(1000, float(data.get('estimated_effort', 100))))
+    # Required fields with strict validation
+    try:
+        validated['total_tasks'] = max(1, min(100, int(float(data.get('total_tasks', 10)))))
+        validated['sprint_duration'] = max(1, min(30, int(float(data.get('sprint_duration', 14)))))
+        validated['team_size'] = max(1, min(20, int(float(data.get('team_size', 5)))))
+        validated['estimated_effort'] = max(1, min(1000, float(data.get('estimated_effort', 100))))
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid numeric values in input")
     
-    # Optional fields with defaults
-    validated['avg_task_complexity'] = max(1, min(10, float(data.get('avg_task_complexity', 5.0))))
-    validated['team_experience'] = max(0, min(10, float(data.get('team_experience', 2.0))))
-    validated['past_sprint_success_rate'] = max(0, min(1, float(data.get('past_sprint_success_rate', 0.7))))
-    validated['priority_high_ratio'] = max(0, min(1, float(data.get('priority_high_ratio', 0.3))))
-    validated['dependencies_count'] = max(0, int(data.get('dependencies_count', 0)))
+    # Optional fields with defaults and validation
+    try:
+        validated['avg_task_complexity'] = max(1, min(10, float(data.get('avg_task_complexity', 5.0))))
+        validated['team_experience'] = max(0, min(10, float(data.get('team_experience', 2.0))))
+        validated['past_sprint_success_rate'] = max(0, min(1, float(data.get('past_sprint_success_rate', 0.7))))
+        validated['priority_high_ratio'] = max(0, min(1, float(data.get('priority_high_ratio', 0.3))))
+        validated['dependencies_count'] = max(0, min(100, int(float(data.get('dependencies_count', 0)))))
+    except (ValueError, TypeError):
+        # Use defaults for optional fields if invalid
+        validated['avg_task_complexity'] = 5.0
+        validated['team_experience'] = 2.0
+        validated['past_sprint_success_rate'] = 0.7
+        validated['priority_high_ratio'] = 0.3
+        validated['dependencies_count'] = 0
+    
+    # Check for suspicious patterns
+    for key, value in data.items():
+        if isinstance(value, str):
+            # Check for potential injection attempts
+            suspicious_patterns = ['<script', 'javascript:', 'eval(', 'exec(', 'import ', '__', 'DROP', 'SELECT', 'INSERT', 'DELETE']
+            if any(pattern.lower() in str(value).lower() for pattern in suspicious_patterns):
+                raise HTTPException(status_code=400, detail="Invalid input detected")
     
     return validated
 

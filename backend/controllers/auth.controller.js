@@ -7,9 +7,9 @@ const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 
 // Generate JWT access token (short-lived)
-const generateAccessToken = (id) => {
+const generateAccessToken = (id, rememberMe = false) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '15m' // Short-lived access token
+    expiresIn: rememberMe ? '15m' : '5m' // Shorter expiration for session-only logins
   });
 };
 
@@ -45,8 +45,8 @@ exports.register = async (req, res) => {
     });
 
     // Generate tokens
-    const accessToken = generateAccessToken(user._id);
-    const refreshToken = generateRefreshToken(user._id);
+    const accessToken = generateAccessToken(user._id, rememberMe);
+    const refreshToken = rememberMe ? generateRefreshToken(user._id) : null;
 
     // Store refresh token in user document (for security)
     user.refreshToken = refreshToken;
@@ -105,7 +105,7 @@ exports.login = async (req, res) => {
     }
 
     // Generate tokens
-    const accessToken = generateAccessToken(user._id);
+    const accessToken = generateAccessToken(user._id, rememberMe);
     const refreshToken = rememberMe ? generateRefreshToken(user._id) : null;
 
     // Store refresh token if rememberMe is true
