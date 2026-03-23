@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     
-    <!-- Favicon and Icons -->
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <!-- Favicon and Icons - Data URL only to avoid 404 errors -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Crect width='32' height='32' rx='6' fill='%234F46E5'/%3E%3Cpath d='M8 12h16v2H8v-2zm0 4h16v2H8v-2zm0 4h12v2H8v-2z' fill='white'/%3E%3Ccircle cx='20' cy='20' r='3' fill='%2310B981'/%3E%3C/svg%3E" />
     
     <!-- Inline Web App Manifest to avoid 401 errors -->
@@ -14,7 +13,7 @@
         "name": "ProdFlow AI",
         "short_name": "ProdFlow AI",
         "description": "AI-Driven Product & Sprint Planning SaaS",
-        "start_url": "/",
+        "start_url": window.location.origin + "/",
         "display": "standalone",
         "background_color": "#ffffff",
         "theme_color": "#4F46E5",
@@ -51,14 +50,12 @@
     <meta property="og:url" content="https://prodflowaii.vercel.app/" />
     <meta property="og:title" content="ProdFlow AI - AI-Driven Product & Sprint Planning" />
     <meta property="og:description" content="AI-powered sprint planning that predicts success before you commit. Make data-driven decisions, not guesses." />
-    <meta property="og:image" content="https://prodflowaii.vercel.app/favicon.svg" />
     
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://prodflowaii.vercel.app/" />
     <meta property="twitter:title" content="ProdFlow AI - AI-Driven Product & Sprint Planning" />
     <meta property="twitter:description" content="AI-powered sprint planning that predicts success before you commit. Make data-driven decisions, not guesses." />
-    <meta property="twitter:image" content="https://prodflowaii.vercel.app/favicon.svg" />
     
     <title>ProdFlow AI - AI-Driven Product & Sprint Planning</title>
   </head>
