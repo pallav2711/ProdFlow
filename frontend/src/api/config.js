@@ -7,7 +7,7 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
-    'Accept-Encoding': 'gzip, deflate, br', // Enable compression
+    // Removed Accept-Encoding - browsers handle this automatically
   },
   // Enable request/response compression
   decompress: true,
