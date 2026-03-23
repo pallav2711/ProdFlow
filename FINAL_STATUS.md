@@ -26,6 +26,13 @@
 - ✅ **Dev Server**: Updated Vite config with historyApiFallback
 - ✅ **All Routes Fixed**: Page refresh now works on all client-side routes
 
+**Problem 5**: 401 Unauthorized errors on manifest.json and static assets
+**Solution 5**: Fixed Vercel configuration conflicts
+- ✅ **Simplified Rewrites**: Used explicit route rewrites instead of regex patterns
+- ✅ **Removed Conflicting Headers**: Eliminated headers causing 401 errors
+- ✅ **Static File Access**: manifest.json and favicon.svg now serve correctly
+- ✅ **PWA Support**: Web app manifest now loads without errors
+
 ### 🛡️ **Security Issue FIXED:**
 **Problem**: Users remained logged in after closing browser window
 **Solution**: Implemented proper session management
