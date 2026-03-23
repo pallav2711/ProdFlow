@@ -5,9 +5,38 @@
     
     <!-- Favicon and Icons -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Crect width='32' height='32' rx='6' fill='%234F46E5'/%3E%3Cpath d='M8 12h16v2H8v-2zm0 4h16v2H8v-2zm0 4h12v2H8v-2z' fill='white'/%3E%3Ccircle cx='20' cy='20' r='3' fill='%2310B981'/%3E%3C/svg%3E" />
     
-    <!-- Web App Manifest -->
-    <link rel="manifest" href="/manifest.json" />
+    <!-- Inline Web App Manifest to avoid 401 errors -->
+    <script>
+      // Inline manifest to avoid external request issues
+      const manifestData = {
+        "name": "ProdFlow AI",
+        "short_name": "ProdFlow AI",
+        "description": "AI-Driven Product & Sprint Planning SaaS",
+        "start_url": "/",
+        "display": "standalone",
+        "background_color": "#ffffff",
+        "theme_color": "#4F46E5",
+        "icons": [
+          {
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32' fill='none'%3E%3Crect width='32' height='32' rx='6' fill='%234F46E5'/%3E%3Cpath d='M8 12h16v2H8v-2zm0 4h16v2H8v-2zm0 4h12v2H8v-2z' fill='white'/%3E%3Ccircle cx='20' cy='20' r='3' fill='%2310B981'/%3E%3C/svg%3E",
+            "sizes": "any",
+            "type": "image/svg+xml"
+          }
+        ]
+      };
+      
+      // Create blob URL for manifest
+      const manifestBlob = new Blob([JSON.stringify(manifestData)], {type: 'application/json'});
+      const manifestURL = URL.createObjectURL(manifestBlob);
+      
+      // Add manifest link
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestURL;
+      document.head.appendChild(link);
+    </script>
     
     <!-- Meta Tags -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />

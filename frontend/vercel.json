@@ -1,7 +1,38 @@
 {
+  "public": true,
+  "cleanUrls": true,
+  "trailingSlash": false,
   "rewrites": [
     {
-      "source": "/((?!favicon\\.svg|manifest\\.json|assets/).*)",
+      "source": "/dashboard",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/login",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/register", 
+      "destination": "/index.html"
+    },
+    {
+      "source": "/product-planning",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sprint-planner",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/my-tasks",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/all-team-tasks",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/sprint-history",
       "destination": "/index.html"
     }
   ]
