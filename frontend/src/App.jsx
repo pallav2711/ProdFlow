@@ -16,7 +16,6 @@ const SprintPlanner = lazy(() => import('./pages/SprintPlanner'))
 const MyTasks = lazy(() => import('./pages/MyTasks'))
 const AllTeamTasks = lazy(() => import('./pages/AllTeamTasks'))
 const SprintHistory = lazy(() => import('./pages/SprintHistory'))
-const AuthDebug = lazy(() => import('./components/AuthDebug'))
 
 // Loading component for suspense fallback
 const LoadingSpinner = () => (
@@ -95,13 +94,6 @@ function AppContent() {
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </Suspense>
-      
-      {/* Debug component - only in development */}
-      {import.meta.env.DEV && (
-        <Suspense fallback={null}>
-          <AuthDebug />
-        </Suspense>
-      )}
     </div>
   )
 }
