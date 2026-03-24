@@ -30,7 +30,6 @@ const connectDB = async () => {
       socketTimeoutMS: 45000,   // How long a send or receive can take before timing out
       
       // Performance optimizations
-      bufferMaxEntries: 0,      // Disable mongoose buffering
       bufferCommands: false,    // Disable mongoose buffering
       
       // Compression for better network performance
@@ -87,6 +86,9 @@ const connectDB = async () => {
     // Set mongoose options for better performance
     mongoose.set('strictQuery', true);
     mongoose.set('sanitizeFilter', true);
+    // Configure mongoose buffering (this is the correct way for newer versions)
+    mongoose.set('bufferCommands', false);
+    mongoose.set('bufferMaxEntries', 0);
 
     // Graceful shutdown
     process.on('SIGINT', async () => {
