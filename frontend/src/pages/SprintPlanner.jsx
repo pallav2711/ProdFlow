@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 import api from '../api/config'
 
 const SprintPlanner = () => {
+  const { user } = useAuth()
   const [sprints, setSprints] = useState([])
   const [products, setProducts] = useState([])
   const [features, setFeatures] = useState([])
@@ -11,8 +13,10 @@ const SprintPlanner = () => {
   const [showEditSprintModal, setShowEditSprintModal] = useState(false)
   const [showTaskModal, setShowTaskModal] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [featureTasks, setFeatureTasks] = useState({}) // { featureId: [{ userId, workType, hours }] }
   const [sprintToEdit, setSprintToEdit] = useState(null)
+  const [lastFetch, setLastFetch] = useState(null)
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
@@ -38,12 +42,37 @@ const SprintPlanner = () => {
     estimatedHours: 0
   })
 
+  // Fetch data when component mounts or user changes
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (user) {
+      console.log('SprintPlanner mounted, fetching data...')
+      fetchData()
+    }
+  }, [user])
+
+  // Auto-refresh data when page becomes visible (for real-time updates)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && shouldRefreshData()) {
+        console.log('SprintPlanner page became visible, refreshing data')
+        fetchData()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user])
+
+  const shouldRefreshData = () => {
+    if (!lastFetch) return true
+    // Refresh if data is older than 1 minute
+    return Date.now() - lastFetch > 60000
+  }
 
   const fetchData = async () => {
     try {
+      setLoading(true)
+      setError(null)
       const [sprintsRes, productsRes] = await Promise.all([
         api.get('/sprints'),
         api.get('/products')
@@ -51,6 +80,7 @@ const SprintPlanner = () => {
       const sprintsData = sprintsRes.data.sprints
       setSprints(sprintsData)
       setProducts(productsRes.data.products)
+      setLastFetch(Date.now())
       
       // Calculate stats
       setStats({
@@ -61,6 +91,7 @@ const SprintPlanner = () => {
       })
     } catch (error) {
       console.error('Error fetching data:', error)
+      setError('Failed to load sprint data. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -298,13 +329,42 @@ const SprintPlanner = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Sprint Planner</h1>
-        <button
-          onClick={() => setShowSprintModal(true)}
-          className="bg-accent text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5"
-        >
-          Create Sprint
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fetchData()}
+            disabled={loading}
+            className="bg-gray-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-700 transition-all hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => setShowSprintModal(true)}
+            className="bg-accent text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5"
+          >
+            Create Sprint
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-red-800 font-medium">{error}</p>
+          </div>
+          <button
+            onClick={() => fetchData()}
+            className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">

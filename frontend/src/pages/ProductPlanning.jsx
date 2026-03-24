@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
 import api from '../api/config'
 
 const ProductPlanning = () => {
+  const { user } = useAuth()
   const [products, setProducts] = useState([])
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [features, setFeatures] = useState([])
@@ -17,10 +19,12 @@ const ProductPlanning = () => {
   const [productToEdit, setProductToEdit] = useState(null)
   const [featureToEdit, setFeatureToEdit] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
   const [teamMembers, setTeamMembers] = useState([])
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState('Developer')
   const [inviteSpecialization, setInviteSpecialization] = useState('None')
+  const [lastFetch, setLastFetch] = useState(null)
 
   const [productForm, setProductForm] = useState({
     name: '',
@@ -36,16 +40,52 @@ const ProductPlanning = () => {
     estimatedEffort: 0
   })
 
+  // Fetch data when component mounts or user changes
   useEffect(() => {
-    fetchProducts()
-  }, [])
+    if (user) {
+      console.log('ProductPlanning mounted, fetching data...')
+      fetchProducts()
+    }
+  }, [user])
+
+  // Auto-refresh data when page becomes visible (for real-time updates)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden && user && shouldRefreshData()) {
+        console.log('ProductPlanning page became visible, refreshing data')
+        fetchProducts()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [user])
+
+  const shouldRefreshData = () => {
+    if (!lastFetch) return true
+    // Refresh if data is older than 1 minute
+    return Date.now() - lastFetch > 60000
+  }
 
   const fetchProducts = async () => {
     try {
+      setLoading(true)
+      setError(null)
       const res = await api.get('/products')
       setProducts(res.data.products)
+      setLastFetch(Date.now())
+      
+      // If we had a selected product, refresh its data
+      if (selectedProduct) {
+        const updatedProduct = res.data.products.find(p => p._id === selectedProduct._id)
+        if (updatedProduct) {
+          setSelectedProduct(updatedProduct)
+          await fetchFeatures(updatedProduct._id)
+        }
+      }
     } catch (error) {
       console.error('Error fetching products:', error)
+      setError('Failed to load products. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -231,13 +271,42 @@ const ProductPlanning = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Product Planning</h1>
-        <button
-          onClick={() => setShowProductModal(true)}
-          className="bg-accent text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5"
-        >
-          Create Product
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => fetchProducts()}
+            disabled={loading}
+            className="bg-gray-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-700 transition-all hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          >
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+          <button
+            onClick={() => setShowProductModal(true)}
+            className="bg-accent text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5"
+          >
+            Create Product
+          </button>
+        </div>
       </div>
+
+      {error && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <p className="text-red-800 font-medium">{error}</p>
+          </div>
+          <button
+            onClick={() => fetchProducts()}
+            className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-3 gap-6">
         {/* Products List */}

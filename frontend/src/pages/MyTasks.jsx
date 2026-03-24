@@ -1,39 +1,38 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import api from '../api/config'
+import { useDashboard } from '../context/DashboardContext'
 
 const MyTasks = () => {
   const { user } = useAuth()
-  const [myTasks, setMyTasks] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { 
+    myTasks, 
+    loading, 
+    error, 
+    fetchDashboardData, 
+    updateTaskStatus,
+    isDataStale 
+  } = useDashboard()
+  
   const [filterStatus, setFilterStatus] = useState('all')
 
+  // Fetch data when component mounts or when data is stale
   useEffect(() => {
-    fetchMyTasks()
-  }, [])
-
-  const fetchMyTasks = async () => {
-    try {
-      const res = await api.get('/sprints/my-tasks')
-      setMyTasks(res.data.tasks || [])
-    } catch (error) {
-      console.error('Error fetching my tasks:', error)
-    } finally {
-      setLoading(false)
+    if (user) {
+      console.log('MyTasks mounted, fetching data...')
+      // Always fetch fresh data when navigating to my tasks
+      fetchDashboardData(true)
     }
-  }
+  }, [user])
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      const response = await api.put(`/sprints/tasks/${taskId}`, { status: newStatus })
+      const response = await updateTaskStatus(taskId, newStatus)
       
-      if (response.data.sprintCompleted) {
+      if (response.sprintCompleted) {
         alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')
       } else {
         alert('Task status updated successfully!')
       }
-      
-      fetchMyTasks()
     } catch (error) {
       alert(error.response?.data?.message || 'Error updating task status')
     }

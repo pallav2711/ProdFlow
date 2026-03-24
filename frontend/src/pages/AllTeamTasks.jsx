@@ -1,53 +1,40 @@
 import { useState, useEffect } from 'react'
-import api from '../api/config'
+import { useAuth } from '../context/AuthContext'
+import { useDashboard } from '../context/DashboardContext'
 
 const AllTeamTasks = () => {
-  const [allTasks, setAllTasks] = useState([])
-  const [loading, setLoading] = useState(true)
+  const { user } = useAuth()
+  const { 
+    allTasks, 
+    loading, 
+    error, 
+    fetchDashboardData, 
+    approveTask,
+    rejectTask,
+    updateTaskStatus,
+    isDataStale 
+  } = useDashboard()
+  
   const [filterStatus, setFilterStatus] = useState('all')
 
+  // Fetch data when component mounts
   useEffect(() => {
-    fetchAllTasks()
-  }, [])
-
-  const fetchAllTasks = async () => {
-    try {
-      const sprintsRes = await api.get('/sprints')
-      const sprintsData = sprintsRes.data.sprints
-
-      // Fetch all tasks from all sprints
-      const allTasksPromises = sprintsData.map(sprint =>
-        api.get(`/sprints/${sprint._id}`).catch(err => {
-          console.error(`Error fetching sprint ${sprint._id}:`, err)
-          return { data: { sprint: { tasks: [] } } }
-        })
-      )
-      
-      const tasksResults = await Promise.all(allTasksPromises)
-      const allTasksData = tasksResults.flatMap(res => res.data.sprint?.tasks || res.data.tasks || [])
-      
-      setAllTasks(allTasksData)
-    } catch (error) {
-      console.error('Error fetching all tasks:', error)
-    } finally {
-      setLoading(false)
+    if (user) {
+      console.log('AllTeamTasks mounted, fetching data...')
+      // Always fetch fresh data when navigating to all team tasks
+      fetchDashboardData(true)
     }
-  }
+  }, [user])
 
   const handleApproveTask = async (taskId) => {
     try {
-      const response = await api.put(`/sprints/tasks/${taskId}`, { 
-        status: 'Completed',
-        reviewNotes: 'Approved by Team Lead'
-      })
+      const response = await approveTask(taskId)
       
-      if (response.data.sprintCompleted) {
+      if (response.sprintCompleted) {
         alert('Task approved! 🎉 All tasks completed - Sprint marked as Completed!')
       } else {
         alert('Task approved successfully!')
       }
-      
-      fetchAllTasks()
     } catch (error) {
       alert(error.response?.data?.message || 'Error approving task')
     }
@@ -58,9 +45,8 @@ const AllTeamTasks = () => {
     if (!reviewNotes) return
 
     try {
-      await api.put(`/sprints/tasks/${taskId}/reject`, { reviewNotes })
+      await rejectTask(taskId, reviewNotes)
       alert('Task sent back for revision')
-      fetchAllTasks()
     } catch (error) {
       alert(error.response?.data?.message || 'Error rejecting task')
     }
@@ -68,15 +54,13 @@ const AllTeamTasks = () => {
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      const response = await api.put(`/sprints/tasks/${taskId}`, { status: newStatus })
+      const response = await updateTaskStatus(taskId, newStatus)
       
-      if (response.data.sprintCompleted) {
+      if (response.sprintCompleted) {
         alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')
       } else {
         alert('Task status updated successfully!')
       }
-      
-      fetchAllTasks()
     } catch (error) {
       alert(error.response?.data?.message || 'Error updating task status')
     }
@@ -127,13 +111,13 @@ const AllTeamTasks = () => {
       case 'UI/UX Design':
         return '✨'
       case 'DevOps':
-        return '🚀'
+        return '�'
       case 'Testing':
         return '🧪'
       case 'Full Stack':
-        return '💻'
+        return '�'
       default:
-        return '💼'
+        return '�'
     }
   }
 
@@ -187,8 +171,27 @@ const AllTeamTasks = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">All Team Tasks</h1>
-        <p className="text-gray-600 mt-1">Monitor and manage all tasks across all sprints</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">All Team Tasks</h1>
+            <p className="text-gray-600 mt-1">Monitor and manage all tasks across all sprints</p>
+          </div>
+          <button
+            onClick={() => fetchDashboardData(true)}
+            disabled={loading}
+            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+          >
+            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {loading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-700 text-sm">{error}</p>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}
@@ -339,12 +342,6 @@ const AllTeamTasks = () => {
                             <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
                           </svg>
                           Feature: {task.feature?.name || 'No feature'}
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
-                          </svg>
-                          Sprint: {task.sprint?.name || 'No sprint'}
                         </span>
                       </div>
                       {task.reviewNotes && (

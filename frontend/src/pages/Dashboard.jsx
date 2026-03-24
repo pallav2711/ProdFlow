@@ -1,85 +1,44 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
-import api from '../api/config'
+import { useDashboard } from '../context/DashboardContext'
 
 const Dashboard = () => {
   const { user } = useAuth()
-  const [stats, setStats] = useState({
-    products: 0,
-    sprints: 0,
-    activeSprints: 0,
-    completedSprints: 0,
-    myTasks: 0,
-    completedTasks: 0
-  })
-  const [myTasks, setMyTasks] = useState([])
-  const [allTasks, setAllTasks] = useState([])
-  const [sprints, setSprints] = useState([])
-  const [loading, setLoading] = useState(true)
+  const {
+    stats,
+    myTasks,
+    allTasks,
+    sprints,
+    loading,
+    error,
+    fetchDashboardData,
+    updateTaskStatus,
+    approveTask,
+    rejectTask,
+    isDataStale
+  } = useDashboard()
+  
   const [activeTab, setActiveTab] = useState('myTasks') // 'myTasks' or 'allTasks'
   const [filterStatus, setFilterStatus] = useState('all') // 'all', 'To Do', 'In Progress', 'Completed', 'Blocked'
 
+  // Fetch data when component mounts or when data is stale
   useEffect(() => {
-    fetchDashboardData()
-  }, [])
-
-  const fetchDashboardData = async () => {
-    try {
-      const [sprintsRes, productsRes, myTasksRes] = await Promise.all([
-        api.get('/sprints'),
-        api.get('/products'),
-        api.get('/sprints/my-tasks')
-      ])
-      
-      const sprintsData = sprintsRes.data.sprints
-      setSprints(sprintsData)
-
-      // Fetch all tasks from all sprints for "All Team Tasks" tab
-      const allTasksPromises = sprintsData.map(sprint =>
-        api.get(`/sprints/${sprint._id}`).catch(err => {
-          console.error(`Error fetching sprint ${sprint._id}:`, err)
-          return { data: { tasks: [] } }
-        })
-      )
-      
-      const tasksResults = await Promise.all(allTasksPromises)
-      const allTasksData = tasksResults.flatMap(res => res.data.tasks || [])
-      
-      // Use the dedicated endpoint for user's tasks
-      const userTasks = myTasksRes.data.tasks || []
-      
-      console.log('My tasks from API:', userTasks)
-      console.log('All tasks:', allTasksData)
-      
-      setMyTasks(userTasks)
-      setAllTasks(allTasksData)
-      
-      setStats({
-        products: productsRes.data.count,
-        sprints: sprintsData.length,
-        activeSprints: sprintsData.filter(s => s.status === 'Active').length,
-        completedSprints: sprintsData.filter(s => s.status === 'Completed').length,
-        myTasks: userTasks.length,
-        completedTasks: userTasks.filter(t => t.status === 'Completed').length
-      })
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
-    } finally {
-      setLoading(false)
+    if (user) {
+      console.log('Dashboard mounted, fetching data...')
+      // Always fetch fresh data when navigating to dashboard
+      fetchDashboardData(true)
     }
-  }
+  }, [user])
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
-      const response = await api.put(`/sprints/tasks/${taskId}`, { status: newStatus })
+      const response = await updateTaskStatus(taskId, newStatus)
       
-      if (response.data.sprintCompleted) {
+      if (response.sprintCompleted) {
         alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')
       } else {
         alert('Task status updated successfully!')
       }
-      
-      fetchDashboardData() // Refresh data
     } catch (error) {
       alert(error.response?.data?.message || 'Error updating task status')
     }
@@ -87,18 +46,13 @@ const Dashboard = () => {
 
   const handleApproveTask = async (taskId) => {
     try {
-      const response = await api.put(`/sprints/tasks/${taskId}`, { 
-        status: 'Completed',
-        reviewNotes: 'Approved by Team Lead'
-      })
+      const response = await approveTask(taskId)
       
-      if (response.data.sprintCompleted) {
+      if (response.sprintCompleted) {
         alert('Task approved! 🎉 All tasks completed - Sprint marked as Completed!')
       } else {
         alert('Task approved successfully!')
       }
-      
-      fetchDashboardData()
     } catch (error) {
       alert(error.response?.data?.message || 'Error approving task')
     }
@@ -109,9 +63,8 @@ const Dashboard = () => {
     if (!reviewNotes) return
 
     try {
-      await api.put(`/sprints/tasks/${taskId}/reject`, { reviewNotes })
+      await rejectTask(taskId, reviewNotes)
       alert('Task sent back for revision')
-      fetchDashboardData()
     } catch (error) {
       alert(error.response?.data?.message || 'Error rejecting task')
     }
@@ -230,8 +183,46 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pt-20 sm:pt-24">
         {/* Header */}
         <div className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-          <p className="text-gray-600 mt-1 text-sm sm:text-base">Team Lead Dashboard - Sprint Overview</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+              <p className="text-gray-600 mt-1 text-sm sm:text-base">Team Lead Dashboard - Sprint Overview</p>
+            </div>
+            <div className="mt-4 sm:mt-0 flex items-center gap-3">
+              {isDataStale && (
+                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                  Data may be outdated
+                </span>
+              )}
+              <button
+                onClick={() => fetchDashboardData(true)}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              >
+                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-red-700 text-sm font-medium">Error loading dashboard data</p>
+              </div>
+              <p className="text-red-600 text-sm mt-1">{error}</p>
+              <button
+                onClick={() => fetchDashboardData(true)}
+                className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -333,8 +324,46 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-          <p className="text-gray-600 mt-1">Product Manager Dashboard - Sprint Overview</p>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+              <p className="text-gray-600 mt-1">Product Manager Dashboard - Sprint Overview</p>
+            </div>
+            <div className="mt-4 sm:mt-0 flex items-center gap-3">
+              {isDataStale && (
+                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                  Data may be outdated
+                </span>
+              )}
+              <button
+                onClick={() => fetchDashboardData(true)}
+                disabled={loading}
+                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+              >
+                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                {loading ? 'Refreshing...' : 'Refresh'}
+              </button>
+            </div>
+          </div>
+          {error && (
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <p className="text-red-700 text-sm font-medium">Error loading dashboard data</p>
+              </div>
+              <p className="text-red-600 text-sm mt-1">{error}</p>
+              <button
+                onClick={() => fetchDashboardData(true)}
+                className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Stats Cards */}
@@ -444,6 +473,8 @@ const Dashboard = () => {
 
       setLoading(true)
       try {
+        // Import api dynamically to avoid circular dependency
+        const { default: api } = await import('../api/config')
         const res = await api.get(`/sprints/${sprint._id}`)
         setSprintDetails(res.data)
         setExpanded(true)
@@ -623,8 +654,46 @@ const Dashboard = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pt-20 sm:pt-24">
       {/* Header */}
       <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-        <p className="text-gray-600 mt-1 text-sm sm:text-base">Here's what's happening with your projects</p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
+            <p className="text-gray-600 mt-1 text-sm sm:text-base">Here's what's happening with your projects</p>
+          </div>
+          <div className="mt-4 sm:mt-0 flex items-center gap-3">
+            {isDataStale && (
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                Data may be outdated
+              </span>
+            )}
+            <button
+              onClick={() => fetchDashboardData(true)}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
+            >
+              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {loading ? 'Refreshing...' : 'Refresh'}
+            </button>
+          </div>
+        </div>
+        {error && (
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="text-red-700 text-sm font-medium">Error loading dashboard data</p>
+            </div>
+            <p className="text-red-600 text-sm mt-1">{error}</p>
+            <button
+              onClick={() => fetchDashboardData(true)}
+              className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium underline"
+            >
+              Try again
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Stats Cards */}

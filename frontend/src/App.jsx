@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { DashboardProvider } from './context/DashboardContext'
 import { Suspense, lazy, useEffect } from 'react'
 import PrivateRoute from './components/PrivateRoute'
 import Navbar from './components/Navbar'
@@ -102,10 +103,17 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <Router>
-          <Suspense fallback={<LoadingSpinner />}>
-            <AppContent />
-          </Suspense>
+        <Router
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true
+          }}
+        >
+          <DashboardProvider>
+            <Suspense fallback={<LoadingSpinner />}>
+              <AppContent />
+            </Suspense>
+          </DashboardProvider>
         </Router>
       </AuthProvider>
     </ErrorBoundary>

@@ -33,6 +33,7 @@ dist/
 build/
 */dist/
 */build/
+frontend/dist/
 
 # Logs
 logs/

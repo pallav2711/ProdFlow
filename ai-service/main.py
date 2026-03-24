@@ -9,14 +9,18 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import JSONResponse
 import os
 from typing import Optional, Dict, Any, List
-from dotenv import load_dotenv
 import json
 import time
 import asyncio
 from functools import lru_cache
 
-# Load environment variables
-load_dotenv()
+# Load environment variables (optional)
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    print("⚠️  python-dotenv not installed, using system environment variables")
+    pass
 
 # Create FastAPI app with optimized settings
 app = FastAPI(

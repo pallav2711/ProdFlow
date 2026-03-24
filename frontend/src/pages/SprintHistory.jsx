@@ -1,52 +1,71 @@
 import { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+import { useDashboard } from '../context/DashboardContext'
 import api from '../api/config'
 
 const SprintHistory = () => {
+  const { user } = useAuth()
+  const { 
+    sprints, 
+    loading, 
+    error, 
+    fetchDashboardData, 
+    isDataStale 
+  } = useDashboard()
+  
   const [products, setProducts] = useState([])
   const [sprintsByProduct, setSprintsByProduct] = useState({})
   const [expandedProducts, setExpandedProducts] = useState({})
   const [expandedSprints, setExpandedSprints] = useState({})
   const [sprintDetails, setSprintDetails] = useState({})
-  const [loading, setLoading] = useState(true)
 
+  // Fetch data when component mounts
   useEffect(() => {
-    fetchData()
-  }, [])
+    if (user) {
+      console.log('SprintHistory mounted, fetching data...')
+      fetchData()
+    }
+  }, [user])
+
+  // Update local state when sprints data changes
+  useEffect(() => {
+    if (sprints.length > 0) {
+      groupSprintsByProduct()
+    }
+  }, [sprints])
 
   const fetchData = async () => {
     try {
-      const [productsRes, sprintsRes] = await Promise.all([
-        api.get('/products'),
-        api.get('/sprints')
-      ])
-
-      const productsData = productsRes.data.products
-      const sprintsData = sprintsRes.data.sprints
-
-      // Group sprints by product
-      const grouped = {}
-      sprintsData.forEach(sprint => {
-        const productId = sprint.product?._id
-        if (productId) {
-          if (!grouped[productId]) {
-            grouped[productId] = []
-          }
-          grouped[productId].push(sprint)
-        }
-      })
-
-      // Sort sprints by date (newest first) within each product
-      Object.keys(grouped).forEach(productId => {
-        grouped[productId].sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
-      })
-
-      setProducts(productsData)
-      setSprintsByProduct(grouped)
+      // Fetch dashboard data (includes sprints)
+      await fetchDashboardData(true)
+      
+      // Fetch products separately
+      const productsRes = await api.get('/products')
+      setProducts(productsRes.data.products)
     } catch (error) {
-      console.error('Error fetching data:', error)
-    } finally {
-      setLoading(false)
+      console.error('Error fetching sprint history data:', error)
     }
+  }
+
+  const groupSprintsByProduct = () => {
+    // Group sprints by product
+    const grouped = {}
+    sprints.forEach(sprint => {
+      const productId = sprint.product?._id
+      if (productId) {
+        if (!grouped[productId]) {
+          grouped[productId] = []
+        }
+        grouped[productId].push(sprint)
+      }
+    })
+
+    // Sort sprints by date (newest first) within each product
+    Object.keys(grouped).forEach(productId => {
+      grouped[productId].sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+    })
+
+    setSprintsByProduct(grouped)
   }
 
   const toggleProduct = (productId) => {
