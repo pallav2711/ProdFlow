@@ -1,5 +1,5 @@
 /**
- * MongoDB Database Connection with Advanced Performance Optimizations
+ * MongoDB Database Connection with Performance Optimizations
  * Uses Mongoose for ODM (Object Data Modeling)
  */
 
@@ -20,40 +20,27 @@ const connectDB = async () => {
     console.log('🔗 Connecting to MongoDB...');
     console.log('📍 Database URI:', process.env.MONGODB_URI.replace(/\/\/([^:]+):([^@]+)@/, '//***:***@'));
 
-    // Production-optimized connection options
+    // Optimized connection options for performance
     const options = {
-      // Connection pool settings for high performance
-      maxPoolSize: process.env.NODE_ENV === 'production' ? 20 : 10, // Maximum connections
-      minPoolSize: process.env.NODE_ENV === 'production' ? 5 : 2,   // Minimum connections
-      maxIdleTimeMS: 30000,     // Close connections after 30 seconds of inactivity
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+      
+      // Connection pool settings for better performance
+      maxPoolSize: 10, // Maximum number of connections in the pool
+      minPoolSize: 2,  // Minimum number of connections in the pool
+      maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
       serverSelectionTimeoutMS: 5000, // How long to try selecting a server
-      socketTimeoutMS: 45000,   // How long a send or receive can take before timing out
+      socketTimeoutMS: 45000, // How long to wait for a response
       
-      // Performance optimizations
-      bufferCommands: false,    // Disable mongoose buffering
+      // Buffering settings (updated for newer MongoDB driver)
+      bufferCommands: false, // Disable mongoose buffering
       
-      // Compression for better network performance
+      // Heartbeat settings
+      heartbeatFrequencyMS: 10000, // How often to check server status
+      
+      // Compression for network efficiency
       compressors: ['zlib'],
       zlibCompressionLevel: 6,
-      
-      // Write concern for better performance (adjust based on needs)
-      writeConcern: {
-        w: process.env.NODE_ENV === 'production' ? 'majority' : 1,
-        j: true, // Wait for journal
-        wtimeout: 10000 // 10 second timeout
-      },
-      
-      // Read preference for better performance
-      readPreference: 'primaryPreferred',
-      
-      // Connection management
-      heartbeatFrequencyMS: 10000, // How often to check server status
-      retryWrites: true,
-      retryReads: true,
-      
-      // Additional performance settings
-      autoIndex: process.env.NODE_ENV !== 'production', // Disable in production
-      autoCreate: process.env.NODE_ENV !== 'production', // Disable in production
     };
 
     const conn = await mongoose.connect(process.env.MONGODB_URI, options);
@@ -76,20 +63,6 @@ const connectDB = async () => {
       console.log('📡 Mongoose disconnected from MongoDB');
     });
 
-    // Performance monitoring in development
-    if (process.env.NODE_ENV === 'development') {
-      mongoose.set('debug', (collectionName, method, query, doc) => {
-        console.log(`🔍 MongoDB Query: ${collectionName}.${method}`, JSON.stringify(query));
-      });
-    }
-
-    // Set mongoose options for better performance
-    mongoose.set('strictQuery', true);
-    mongoose.set('sanitizeFilter', true);
-    // Configure mongoose buffering (this is the correct way for newer versions)
-    mongoose.set('bufferCommands', false);
-    mongoose.set('bufferMaxEntries', 0);
-
     // Graceful shutdown
     process.on('SIGINT', async () => {
       await mongoose.connection.close();
@@ -97,18 +70,10 @@ const connectDB = async () => {
       process.exit(0);
     });
 
-    return conn;
   } catch (error) {
     console.error(`❌ MongoDB Connection Error: ${error.message}`);
     console.error('Full error:', error);
-    
-    // Retry connection after delay in production
-    if (process.env.NODE_ENV === 'production') {
-      console.log('🔄 Retrying connection in 5 seconds...');
-      setTimeout(connectDB, 5000);
-    } else {
-      process.exit(1);
-    }
+    process.exit(1);
   }
 };
 

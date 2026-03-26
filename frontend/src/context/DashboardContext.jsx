@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
+import { createContext, useContext, useState, useEffect } from 'react'
 import { useAuth } from './AuthContext'
 import { useLocation } from 'react-router-dom'
 import api from '../api/config'
@@ -33,61 +33,49 @@ export const DashboardProvider = ({ children }) => {
     error: null
   })
 
-  // Optimized cache duration based on data type
-  const CACHE_DURATIONS = {
-    stats: 2 * 60 * 1000,      // 2 minutes for stats
-    tasks: 1 * 60 * 1000,      // 1 minute for tasks (more dynamic)
-    sprints: 3 * 60 * 1000,    // 3 minutes for sprints
-    default: 2 * 60 * 1000     // 2 minutes default
+  // Cache duration: 1 minute (shorter for better real-time updates)
+  const CACHE_DURATION = 1 * 60 * 1000
+
+  const isDataStale = () => {
+    if (!dashboardData.lastFetch) return true
+    return Date.now() - dashboardData.lastFetch > CACHE_DURATION
   }
 
-  // Memoized function to check if data is stale
-  const isDataStale = useCallback((dataType = 'default') => {
-    if (!dashboardData.lastFetch) return true
-    const cacheDuration = CACHE_DURATIONS[dataType] || CACHE_DURATIONS.default
-    return Date.now() - dashboardData.lastFetch > cacheDuration
-  }, [dashboardData.lastFetch])
-
-  // Optimized data fetching with parallel requests and error handling
-  const fetchDashboardData = useCallback(async (forceRefresh = false) => {
+  const fetchDashboardData = async (forceRefresh = false) => {
     // Don't fetch if data is fresh and not forcing refresh
     if (!forceRefresh && !isDataStale() && dashboardData.sprints.length > 0) {
-      console.log('📦 Using cached dashboard data')
+      console.log('Using cached dashboard data')
       return dashboardData
     }
 
-    console.log('🔄 Fetching fresh dashboard data...')
+    console.log('Fetching fresh dashboard data...')
     setDashboardData(prev => ({ ...prev, loading: true, error: null }))
 
     try {
-      // Parallel API calls for better performance
-      const [sprintsRes, productsRes, myTasksRes] = await Promise.allSettled([
+      const [sprintsRes, productsRes, myTasksRes] = await Promise.all([
         api.get('/sprints'),
         api.get('/products'),
         api.get('/sprints/my-tasks')
       ])
       
-      // Handle individual request failures gracefully
-      const sprintsData = sprintsRes.status === 'fulfilled' ? sprintsRes.value.data.sprints : []
-      const productsData = sprintsRes.status === 'fulfilled' ? productsRes.value.data : { count: 0 }
-      const userTasks = myTasksRes.status === 'fulfilled' ? myTasksRes.value.data.tasks : []
+      const sprintsData = sprintsRes.data.sprints
       
-      // Batch fetch all tasks with optimized parallel processing
-      const taskPromises = sprintsData.map(sprint =>
+      // Fetch all tasks from all sprints for "All Team Tasks" tab
+      const allTasksPromises = sprintsData.map(sprint =>
         api.get(`/sprints/${sprint._id}`).catch(err => {
-          console.warn(`Failed to fetch sprint ${sprint._id}:`, err.message)
+          console.error(`Error fetching sprint ${sprint._id}:`, err)
           return { data: { tasks: [] } }
         })
       )
       
-      const tasksResults = await Promise.allSettled(taskPromises)
-      const allTasksData = tasksResults
-        .filter(result => result.status === 'fulfilled')
-        .flatMap(result => result.value.data.tasks || [])
+      const tasksResults = await Promise.all(allTasksPromises)
+      const allTasksData = tasksResults.flatMap(res => res.data.tasks || [])
       
-      // Optimized stats calculation
+      // Use the dedicated endpoint for user's tasks
+      const userTasks = myTasksRes.data.tasks || []
+      
       const newStats = {
-        products: productsData.count || 0,
+        products: productsRes.data.count,
         sprints: sprintsData.length,
         activeSprints: sprintsData.filter(s => s.status === 'Active').length,
         completedSprints: sprintsData.filter(s => s.status === 'Completed').length,
@@ -106,25 +94,27 @@ export const DashboardProvider = ({ children }) => {
       }
 
       setDashboardData(newData)
-      console.log('✅ Dashboard data updated successfully')
+      console.log('Dashboard data updated successfully')
       return newData
     } catch (error) {
-      console.error('❌ Error fetching dashboard data:', error)
-      const errorMessage = error.response?.data?.message || error.message || 'Failed to fetch dashboard data'
-      
+      console.error('Error fetching dashboard data:', error)
       setDashboardData(prev => ({
         ...prev,
         loading: false,
-        error: errorMessage
+        error: error.message || 'Failed to fetch dashboard data'
       }))
       throw error
     }
-  }, [dashboardData, isDataStale])
+  }
 
-  // Optimized task status update with optimistic updates
-  const updateTaskStatus = useCallback(async (taskId, newStatus, reviewNotes = null) => {
+  const updateTaskStatus = async (taskId, newStatus, reviewNotes = null) => {
     try {
-      // Optimistic update for better UX
+      const response = await api.put(`/sprints/tasks/${taskId}`, { 
+        status: newStatus,
+        ...(reviewNotes && { reviewNotes })
+      })
+      
+      // Update local state immediately for better UX
       setDashboardData(prev => {
         const updatedMyTasks = prev.myTasks.map(task => 
           task._id === taskId ? { ...task, status: newStatus, reviewNotes } : task
@@ -147,31 +137,21 @@ export const DashboardProvider = ({ children }) => {
         }
       })
 
-      // Make API call
-      const response = await api.put(`/sprints/tasks/${taskId}`, { 
-        status: newStatus,
-        ...(reviewNotes && { reviewNotes })
-      })
-      
-      // Refresh data from server after a delay to ensure consistency
-      setTimeout(() => fetchDashboardData(true), 1500)
+      // Refresh data from server to ensure consistency
+      setTimeout(() => fetchDashboardData(true), 1000)
       
       return response.data
     } catch (error) {
-      console.error('❌ Error updating task status:', error)
-      // Revert optimistic update on error
-      fetchDashboardData(true)
+      console.error('Error updating task status:', error)
       throw error
     }
-  }, [fetchDashboardData])
+  }
 
-  // Optimized approve task function
-  const approveTask = useCallback(async (taskId) => {
+  const approveTask = async (taskId) => {
     return updateTaskStatus(taskId, 'Completed', 'Approved by Team Lead')
-  }, [updateTaskStatus])
+  }
 
-  // Optimized reject task function
-  const rejectTask = useCallback(async (taskId, reviewNotes) => {
+  const rejectTask = async (taskId, reviewNotes) => {
     try {
       await api.put(`/sprints/tasks/${taskId}/reject`, { reviewNotes })
       
@@ -192,15 +172,14 @@ export const DashboardProvider = ({ children }) => {
       })
 
       // Refresh data from server
-      setTimeout(() => fetchDashboardData(true), 1500)
+      setTimeout(() => fetchDashboardData(true), 1000)
     } catch (error) {
-      console.error('❌ Error rejecting task:', error)
+      console.error('Error rejecting task:', error)
       throw error
     }
-  }, [fetchDashboardData])
+  }
 
-  // Clear cache function
-  const clearCache = useCallback(() => {
+  const clearCache = () => {
     setDashboardData({
       stats: {
         products: 0,
@@ -217,7 +196,7 @@ export const DashboardProvider = ({ children }) => {
       lastFetch: null,
       error: null
     })
-  }, [])
+  }
 
   // Auto-refresh data when user changes
   useEffect(() => {
@@ -226,42 +205,37 @@ export const DashboardProvider = ({ children }) => {
     } else {
       clearCache()
     }
-  }, [user, fetchDashboardData, clearCache])
+  }, [user])
 
   // Auto-refresh data when navigating to dashboard-related pages
   useEffect(() => {
     const dashboardPages = ['/dashboard', '/my-tasks', '/all-team-tasks', '/sprint-history', '/product-planning', '/sprint-planner']
     
     if (user && dashboardPages.includes(location.pathname)) {
-      console.log(`📍 Navigated to ${location.pathname}, checking data freshness...`)
+      console.log(`Navigated to ${location.pathname}, checking data freshness...`)
       
-      // Check if data needs refresh based on page type
-      const needsRefresh = location.pathname.includes('tasks') 
-        ? isDataStale('tasks') 
-        : isDataStale('sprints')
-      
-      if (needsRefresh || dashboardData.sprints.length === 0) {
-        console.log('🔄 Data is stale or empty, fetching fresh data...')
+      // Always fetch fresh data on navigation to ensure real-time updates
+      if (isDataStale() || dashboardData.sprints.length === 0) {
+        console.log('Data is stale or empty, fetching fresh data...')
         fetchDashboardData(true)
       }
     }
-  }, [location.pathname, user, isDataStale, dashboardData.sprints.length, fetchDashboardData])
+  }, [location.pathname, user])
 
   // Auto-refresh stale data when component becomes visible
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && user && isDataStale()) {
-        console.log('👁️ Page became visible, refreshing stale data')
+        console.log('Page became visible, refreshing stale data')
         fetchDashboardData(true)
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [user, isDataStale, fetchDashboardData])
+  }, [user])
 
-  // Memoized context value to prevent unnecessary re-renders
-  const value = useMemo(() => ({
+  const value = {
     ...dashboardData,
     fetchDashboardData,
     updateTaskStatus,
@@ -269,15 +243,7 @@ export const DashboardProvider = ({ children }) => {
     rejectTask,
     clearCache,
     isDataStale: isDataStale()
-  }), [
-    dashboardData,
-    fetchDashboardData,
-    updateTaskStatus,
-    approveTask,
-    rejectTask,
-    clearCache,
-    isDataStale
-  ])
+  }
 
   return (
     <DashboardContext.Provider value={value}>
