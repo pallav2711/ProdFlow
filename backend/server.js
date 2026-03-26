@@ -70,6 +70,19 @@ app.use(helmet({
   }
 }));
 
+// CORS debugging middleware (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log('🌐 CORS Debug:', {
+      method: req.method,
+      origin: req.headers.origin,
+      headers: Object.keys(req.headers).filter(h => h.startsWith('access-control') || h === 'origin'),
+      url: req.url
+    });
+    next();
+  });
+}
+
 // Additional security middleware
 app.use((req, res, next) => {
   // Prevent clickjacking
@@ -86,14 +99,6 @@ app.use((req, res, next) => {
   
   // Feature Policy
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
-  
-  // Additional CORS headers for preflight requests
-  if (req.method === 'OPTIONS') {
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Request-ID, Accept, Origin');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
-    return res.status(200).end();
-  }
   
   next();
 });
@@ -134,41 +139,60 @@ const limiter = rateLimit({
 // Apply rate limiting to API routes only
 app.use('/api/', limiter);
 
-// CORS with optimized settings
-app.use(cors({
+// CORS with comprehensive configuration - PERMANENT SOLUTION
+const corsOptions = {
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    // Allow requests with no origin (like mobile apps, Postman, curl)
+    if (!origin) {
+      console.log('✅ CORS: Allowing request with no origin');
+      return callback(null, true);
+    }
     
     const allowedOrigins = [
       'http://localhost:3000',
+      'http://localhost:5173', // Vite dev server
       'https://prodflowaii.vercel.app',
+      'https://prodflow-ai.vercel.app',
       process.env.FRONTEND_URL
     ].filter(Boolean);
     
-    // Allow all Vercel preview deployments
-    const isVercelPreview = origin.includes('vercel.app') && 
-                           (origin.includes('prodflow') || origin.includes('pallav2711'));
+    // Allow all Vercel deployments for this project
+    const isVercelDeployment = origin.includes('vercel.app') && 
+                              (origin.includes('prodflow') || origin.includes('pallav2711'));
     
-    if (allowedOrigins.includes(origin) || isVercelPreview) {
+    // Allow localhost with any port for development
+    const isLocalhost = origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:');
+    
+    if (allowedOrigins.includes(origin) || isVercelDeployment || isLocalhost) {
+      console.log('✅ CORS: Allowing origin:', origin);
       callback(null, true);
     } else {
-      console.log('CORS blocked origin:', origin);
-      callback(new Error('Not allowed by CORS'));
+      console.log('❌ CORS: Blocking origin:', origin);
+      console.log('Allowed origins:', allowedOrigins);
+      callback(new Error(`CORS policy violation: Origin ${origin} not allowed`));
     }
   },
   credentials: true,
-  optionsSuccessStatus: 200, // For legacy browser support
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
-    'Content-Type', 
-    'Authorization', 
+    'Origin',
     'X-Requested-With',
-    'X-Request-ID',
+    'Content-Type',
     'Accept',
-    'Origin'
-  ]
-}));
+    'Authorization',
+    'X-Request-ID',
+    'Cache-Control',
+    'Pragma'
+  ],
+  exposedHeaders: [
+    'X-Request-ID',
+    'X-Response-Time'
+  ],
+  maxAge: 86400 // 24 hours preflight cache
+};
+
+app.use(cors(corsOptions));
 
 // Body parsing middleware with size limits and validation
 app.use(express.json({ 
@@ -252,6 +276,20 @@ app.use('/api/products', require('./routes/product.routes'));
 app.use('/api/sprints', require('./routes/sprint.routes'));
 app.use('/api/teams', require('./routes/team.routes'));
 app.use('/api/health', require('./routes/health.routes'));
+
+// CORS test endpoint
+app.options('/api/cors-test', (req, res) => {
+  res.status(200).json({ message: 'CORS preflight successful' });
+});
+
+app.get('/api/cors-test', (req, res) => {
+  res.json({
+    message: 'CORS test successful',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString(),
+    headers: req.headers
+  });
+});
 
 // Legacy health check endpoints (for backward compatibility)
 app.get('/health', (req, res) => res.redirect('/api/health'));

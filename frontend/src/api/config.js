@@ -48,10 +48,8 @@ api.interceptors.request.use(
     // Add request timestamp for performance monitoring
     config.metadata = { startTime: Date.now() };
     
-    // Add request ID for tracking (only in development to avoid CORS issues)
-    if (import.meta.env.DEV) {
-      config.headers['X-Request-ID'] = Math.random().toString(36).substring(7);
-    }
+    // Add request ID for tracking (now properly configured in CORS)
+    config.headers['X-Request-ID'] = Math.random().toString(36).substring(7);
     
     return config;
   },

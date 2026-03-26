@@ -5,6 +5,27 @@
 
 import api, { checkApiHealth } from '../api/config';
 
+// Test CORS configuration
+export const testCorsConfiguration = async () => {
+  try {
+    const response = await api.get('/cors-test', { timeout: 5000 });
+    return {
+      success: true,
+      status: 'cors_working',
+      data: response.data,
+      headers: response.headers
+    };
+  } catch (error) {
+    return {
+      success: false,
+      status: 'cors_failed',
+      error: error.message,
+      code: error.code,
+      response: error.response?.data
+    };
+  }
+};
+
 // Test API connection
 export const testApiConnection = async () => {
   try {
@@ -85,6 +106,10 @@ export const runSystemDiagnostics = async () => {
     tests: {}
   };
 
+  // Test CORS configuration
+  console.log('Testing CORS configuration...');
+  diagnostics.tests.cors = await testCorsConfiguration();
+
   // Test API health
   console.log('Testing API health...');
   diagnostics.tests.apiHealth = await checkApiHealth();
@@ -160,6 +185,7 @@ export const testNetworkQuality = async () => {
 
 // Export all test functions
 export default {
+  testCorsConfiguration,
   testApiConnection,
   testAuthFlow,
   testProtectedEndpoints,

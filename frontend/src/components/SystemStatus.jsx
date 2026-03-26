@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { runSystemDiagnostics, testNetworkQuality } from '../utils/connectionTest';
+import { runSystemDiagnostics, testNetworkQuality, testCorsConfiguration } from '../utils/connectionTest';
 
 const SystemStatus = ({ onClose }) => {
   const [diagnostics, setDiagnostics] = useState(null);
@@ -66,6 +66,32 @@ const SystemStatus = ({ onClose }) => {
 
         {diagnostics && (
           <div className="space-y-6">
+            {/* CORS Configuration */}
+            {diagnostics.tests.cors && (
+              <div className="border rounded-lg p-4">
+                <h3 className="text-lg font-semibold mb-3">CORS Configuration</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <span className="font-medium">Status: </span>
+                    <span className={getStatusColor(diagnostics.tests.cors.status)}>
+                      {getStatusIcon(diagnostics.tests.cors.status)} {diagnostics.tests.cors.status}
+                    </span>
+                  </div>
+                  {diagnostics.tests.cors.success && (
+                    <div>
+                      <span className="font-medium">Origin: </span>
+                      <span className="text-sm">{diagnostics.tests.cors.data?.origin || 'N/A'}</span>
+                    </div>
+                  )}
+                </div>
+                {!diagnostics.tests.cors.success && (
+                  <div className="mt-2 text-sm text-red-600">
+                    Error: {diagnostics.tests.cors.error}
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* API Health */}
             <div className="border rounded-lg p-4">
               <h3 className="text-lg font-semibold mb-3">API Health</h3>
