@@ -124,20 +124,27 @@ app.use(compression({
   }
 }));
 
-// Rate limiting to prevent abuse
+// Rate limiting to prevent abuse - MOVED AFTER CORS
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: process.env.NODE_ENV === 'production' ? 100 : 1000, // Limit each IP to 100 requests per windowMs in production, 1000 in development
+  max: process.env.NODE_ENV === 'production' ? 1000 : 10000, // Much higher limits
   message: {
     error: 'Too many requests from this IP, please try again later.',
     retryAfter: '15 minutes'
   },
   standardHeaders: true,
   legacyHeaders: false,
+  // Skip rate limiting for CORS preflight requests
+  skip: (req) => req.method === 'OPTIONS',
+  // Custom handler to ensure CORS headers are always sent
+  handler: (req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many requests from this IP, please try again later.',
+      retryAfter: '15 minutes'
+    });
+  }
 });
-
-// Apply rate limiting to API routes only
-app.use('/api/', limiter);
 
 // CORS with comprehensive configuration - PERMANENT SOLUTION
 const corsOptions = {
@@ -193,6 +200,50 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+
+// CORS debugging middleware (only in development)
+if (process.env.NODE_ENV !== 'production') {
+  app.use((req, res, next) => {
+    console.log('🌐 CORS Debug:', {
+      method: req.method,
+      origin: req.headers.origin,
+      headers: Object.keys(req.headers).filter(h => h.startsWith('access-control') || h === 'origin'),
+      url: req.url
+    });
+    next();
+  });
+}
+
+// Custom middleware to ensure CORS headers are always present
+app.use((req, res, next) => {
+  // Always set CORS headers for allowed origins
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'http://localhost:3000',
+    'http://localhost:5173',
+    'https://prodflowaii.vercel.app',
+    'https://prodflow-ai.vercel.app',
+    process.env.FRONTEND_URL
+  ].filter(Boolean);
+  
+  const isVercelDeployment = origin && origin.includes('vercel.app') && 
+                            (origin.includes('prodflow') || origin.includes('pallav2711'));
+  const isLocalhost = origin && (origin.startsWith('http://localhost:') || origin.startsWith('https://localhost:'));
+  
+  if (!origin || allowedOrigins.includes(origin) || isVercelDeployment || isLocalhost) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+    res.setHeader('Access-Control-Allow-Credentials', 'true');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+    res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, X-Request-ID, Cache-Control, Pragma');
+    res.setHeader('Access-Control-Expose-Headers', 'X-Request-ID, X-Response-Time');
+    res.setHeader('Access-Control-Max-Age', '86400');
+  }
+  
+  next();
+});
+
+// Apply rate limiting to API routes only - AFTER CORS to ensure CORS headers are always sent
+app.use('/api/', limiter);
 
 // Body parsing middleware with size limits and validation
 app.use(express.json({ 
