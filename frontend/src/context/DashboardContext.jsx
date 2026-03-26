@@ -42,6 +42,12 @@ export const DashboardProvider = ({ children }) => {
   }
 
   const fetchDashboardData = async (forceRefresh = false) => {
+    // Don't fetch if user is not authenticated
+    if (!user) {
+      console.log('User not authenticated, skipping dashboard data fetch')
+      return dashboardData
+    }
+
     // Don't fetch if data is fresh and not forcing refresh
     if (!forceRefresh && !isDataStale() && dashboardData.sprints.length > 0) {
       console.log('Using cached dashboard data')
@@ -108,6 +114,11 @@ export const DashboardProvider = ({ children }) => {
   }
 
   const updateTaskStatus = async (taskId, newStatus, reviewNotes = null) => {
+    // Don't update if user is not authenticated
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
     try {
       const response = await api.put(`/sprints/tasks/${taskId}`, { 
         status: newStatus,
@@ -152,6 +163,11 @@ export const DashboardProvider = ({ children }) => {
   }
 
   const rejectTask = async (taskId, reviewNotes) => {
+    // Don't reject if user is not authenticated
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
     try {
       await api.put(`/sprints/tasks/${taskId}/reject`, { reviewNotes })
       
