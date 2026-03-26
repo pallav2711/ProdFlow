@@ -17,6 +17,7 @@ const {
 } = require('../controllers/sprint.controller');
 const { protect, authorize } = require('../middleware/auth');
 const { validateSprint, validateTask, validateObjectId } = require('../middleware/validation');
+const asyncHandler = require('../middleware/asyncHandler');
 
 // All routes require authentication
 router.use(protect);
@@ -25,21 +26,21 @@ router.use(protect);
 router.get('/my-tasks', getMyTasks);
 
 router.route('/')
-  .post(authorize('Team Lead', 'Product Manager'), createSprint)
-  .get(getSprints);
+  .post(authorize('Team Lead', 'Product Manager'), asyncHandler(createSprint))
+  .get(asyncHandler(getSprints));
 
 router.route('/:id')
-  .get(validateObjectId('id'), getSprint)
-  .put(authorize('Team Lead', 'Product Manager'), validateObjectId('id'), validateSprint, updateSprint)
-  .delete(authorize('Team Lead', 'Product Manager'), validateObjectId('id'), deleteSprint);
+  .get(validateObjectId('id'), asyncHandler(getSprint))
+  .put(authorize('Team Lead', 'Product Manager'), validateObjectId('id'), validateSprint, asyncHandler(updateSprint))
+  .delete(authorize('Team Lead', 'Product Manager'), validateObjectId('id'), asyncHandler(deleteSprint));
 
 router.route('/:id/tasks')
-  .post(authorize('Team Lead', 'Product Manager'), validateObjectId('id'), validateTask, addTask);
+  .post(authorize('Team Lead', 'Product Manager'), validateObjectId('id'), validateTask, asyncHandler(addTask));
 
 router.route('/tasks/:taskId')
-  .put(validateObjectId('taskId'), updateTaskStatus);
+  .put(validateObjectId('taskId'), asyncHandler(updateTaskStatus));
 
 router.route('/tasks/:taskId/reject')
-  .put(authorize('Team Lead', 'Product Manager'), validateObjectId('taskId'), rejectTask);
+  .put(authorize('Team Lead', 'Product Manager'), validateObjectId('taskId'), asyncHandler(rejectTask));
 
 module.exports = router;

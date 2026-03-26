@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { getApiErrorMessage } from '../utils/apiError'
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -27,16 +28,16 @@ const Register = () => {
       await register(formData.name, formData.email, formData.password, formData.role)
       navigate('/dashboard')
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed')
+      setError(getApiErrorMessage(err, 'Registration failed'))
     } finally {
       setLoading(false)
     }
   }
 
   const roles = [
-    { value: 'Product Manager', icon: '📋', description: 'Create products & features' },
-    { value: 'Team Lead', icon: '👥', description: 'Plan sprints & assign tasks' },
-    { value: 'Developer', icon: '💻', description: 'View & update tasks' }
+    { value: 'Product Manager', description: 'Create products & features' },
+    { value: 'Team Lead', description: 'Plan sprints & assign tasks' },
+    { value: 'Developer', description: 'View & update tasks' }
   ]
 
   return (
@@ -126,7 +127,7 @@ const Register = () => {
               >
                 {roles.map((role) => (
                   <option key={role.value} value={role.value}>
-                    {role.icon} {role.value} - {role.description}
+                    {role.value} - {role.description}
                   </option>
                 ))}
               </select>

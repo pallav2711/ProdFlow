@@ -1,12 +1,20 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDashboard } from '../context/DashboardContext'
 import api from '../api/config'
+import { useToast } from '../context/ToastContext'
+import PageHeader from '../components/PageHeader'
+import PaginationControls from '../components/PaginationControls'
+import PageSkeleton from '../components/PageSkeleton'
+import { StatusIcon, WorkTypeIcon } from '../components/AppIcons'
 
 const SprintHistory = () => {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const { 
     sprints, 
+    pagination,
     loading, 
     error, 
     fetchDashboardData, 
@@ -18,6 +26,8 @@ const SprintHistory = () => {
   const [expandedProducts, setExpandedProducts] = useState({})
   const [expandedSprints, setExpandedSprints] = useState({})
   const [sprintDetails, setSprintDetails] = useState({})
+  const [sprintPage, setSprintPage] = useState(1)
+  const SPRINTS_PAGE_SIZE = 20
 
   // Fetch data when component mounts
   useEffect(() => {
@@ -25,7 +35,7 @@ const SprintHistory = () => {
       console.log('SprintHistory mounted, fetching data...')
       fetchData()
     }
-  }, [user])
+  }, [user, sprintPage])
 
   // Update local state when sprints data changes
   useEffect(() => {
@@ -37,10 +47,16 @@ const SprintHistory = () => {
   const fetchData = async () => {
     try {
       // Fetch dashboard data (includes sprints)
-      await fetchDashboardData(true)
+      await fetchDashboardData(true, {
+        pagination: {
+          sprints: { page: sprintPage, limit: SPRINTS_PAGE_SIZE }
+        }
+      })
       
       // Fetch products separately
-      const productsRes = await api.get('/products')
+      const productsRes = await api.get('/products', {
+        params: { page: 1, limit: 100 }
+      })
       setProducts(productsRes.data.products)
     } catch (error) {
       console.error('Error fetching sprint history data:', error)
@@ -94,7 +110,7 @@ const SprintHistory = () => {
         }))
       } catch (error) {
         console.error('Error fetching sprint details:', error)
-        alert('Error loading sprint details')
+        showToast('Error loading sprint details', 'error')
         return
       }
     }
@@ -118,18 +134,7 @@ const SprintHistory = () => {
     }
   }
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Planning':
-        return '📋'
-      case 'Active':
-        return '⚡'
-      case 'Completed':
-        return '✅'
-      default:
-        return '📋'
-    }
-  }
+  const getStatusIcon = (status) => <StatusIcon status={status} />
 
   const getTaskStatusColor = (status) => {
     switch (status) {
@@ -148,43 +153,9 @@ const SprintHistory = () => {
     }
   }
 
-  const getTaskStatusIcon = (status) => {
-    switch (status) {
-      case 'To Do':
-        return '📋'
-      case 'In Progress':
-        return '⚡'
-      case 'Pending Review':
-        return '👀'
-      case 'Completed':
-        return '✅'
-      case 'Blocked':
-        return '🚫'
-      default:
-        return '📋'
-    }
-  }
+  const getTaskStatusIcon = (status) => <StatusIcon status={status} />
 
-  const getWorkTypeIcon = (workType) => {
-    switch (workType) {
-      case 'Frontend':
-        return '🎨'
-      case 'Backend':
-        return '⚙️'
-      case 'Database':
-        return '🗄️'
-      case 'UI/UX Design':
-        return '✨'
-      case 'DevOps':
-        return '🚀'
-      case 'Testing':
-        return '🧪'
-      case 'Full Stack':
-        return '💻'
-      default:
-        return '💼'
-    }
-  }
+  const getWorkTypeIcon = (workType) => <WorkTypeIcon workType={workType} />
 
   const getWorkTypeColor = (workType) => {
     switch (workType) {
@@ -221,23 +192,23 @@ const SprintHistory = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading sprint history...</p>
-        </div>
-      </div>
-    )
+    return <PageSkeleton variant="table" cards={4} rows={6} />
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Sprint History</h1>
-        <p className="text-gray-600 mt-1">View all sprints organized by product with complete details</p>
-      </div>
+      <PageHeader
+        title="Sprint History"
+        subtitle="View all sprints organized by product with complete details."
+        meta={
+          pagination?.sprints ? (
+            <p className="text-xs text-gray-500">
+              Showing page {pagination.sprints.page} of {pagination.sprints.totalPages} ({pagination.sprints.totalCount} total sprints)
+            </p>
+          ) : null
+        }
+      />
 
       {/* Stats */}
       <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -274,6 +245,14 @@ const SprintHistory = () => {
             </svg>
             <p className="text-gray-600 font-medium">No products yet</p>
             <p className="text-gray-500 text-sm mt-1">Create your first product to get started</p>
+            {user?.role === 'Product Manager' && (
+              <Link
+                to="/product-planning"
+                className="inline-flex mt-4 px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-gray-800 transition-colors"
+              >
+                Go to Product Planning
+              </Link>
+            )}
           </div>
         ) : (
           products.map(product => {
@@ -292,7 +271,7 @@ const SprintHistory = () => {
                       <div className="flex items-center gap-3 mb-2">
                         <h2 className="text-xl font-bold text-gray-900">{product.name}</h2>
                         <span className="px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
-                          📦 {productSprints.length} sprint{productSprints.length !== 1 ? 's' : ''}
+                          {productSprints.length} sprint{productSprints.length !== 1 ? 's' : ''}
                         </span>
                       </div>
                       <p className="text-gray-600 text-sm">{product.vision}</p>
@@ -336,15 +315,15 @@ const SprintHistory = () => {
                                       </span>
                                       {sprint.aiPrediction?.successProbability && (
                                         <span className="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                          🤖 {sprint.aiPrediction.successProbability}% success
+                                          AI {sprint.aiPrediction.successProbability}% success
                                         </span>
                                       )}
                                     </div>
                                     <div className="flex items-center gap-4 text-xs text-gray-600">
-                                      <span>📅 {sprint.duration} days</span>
-                                      <span>👥 Team: {sprint.teamSize}</span>
-                                      <span>🎯 {sprint.features?.length || 0} features</span>
-                                      <span>📆 {new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}</span>
+                                      <span>{sprint.duration} days</span>
+                                      <span>Team: {sprint.teamSize}</span>
+                                      <span>{sprint.features?.length || 0} features</span>
+                                      <span>{new Date(sprint.startDate).toLocaleDateString()} - {new Date(sprint.endDate).toLocaleDateString()}</span>
                                     </div>
                                   </div>
                                   <svg
@@ -445,6 +424,18 @@ const SprintHistory = () => {
           })
         )}
       </div>
+
+      {/* Sprint Pagination */}
+      {pagination?.sprints && pagination.sprints.totalPages > 1 && (
+        <PaginationControls
+          currentPage={sprintPage}
+          totalPages={pagination.sprints.totalPages}
+          onPrevious={() => setSprintPage((prev) => Math.max(prev - 1, 1))}
+          onNext={() => setSprintPage((prev) => Math.min(prev + 1, pagination.sprints.totalPages))}
+          canPrevious={!loading && sprintPage > 1}
+          canNext={!loading && sprintPage < pagination.sprints.totalPages}
+        />
+      )}
     </div>
   )
 }

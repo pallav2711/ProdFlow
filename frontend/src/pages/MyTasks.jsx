@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useDashboard } from '../context/DashboardContext'
+import { useToast } from '../context/ToastContext'
+import PageHeader from '../components/PageHeader'
+import PageSkeleton from '../components/PageSkeleton'
+import { StatusIcon, WorkTypeIcon } from '../components/AppIcons'
 
 const MyTasks = () => {
   const { user } = useAuth()
@@ -12,6 +16,7 @@ const MyTasks = () => {
     updateTaskStatus,
     isDataStale 
   } = useDashboard()
+  const { showToast } = useToast()
   
   const [filterStatus, setFilterStatus] = useState('all')
 
@@ -29,12 +34,12 @@ const MyTasks = () => {
       const response = await updateTaskStatus(taskId, newStatus)
       
       if (response.sprintCompleted) {
-        alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')
+        showToast('Task updated! All tasks completed - Sprint marked as Completed!', 'success')
       } else {
-        alert('Task status updated successfully!')
+        showToast('Task status updated successfully!', 'success')
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Error updating task status')
+      showToast(error.response?.data?.message || 'Error updating task status', 'error')
     }
   }
 
@@ -55,43 +60,9 @@ const MyTasks = () => {
     }
   }
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'To Do':
-        return '📋'
-      case 'In Progress':
-        return '⚡'
-      case 'Pending Review':
-        return '👀'
-      case 'Completed':
-        return '✅'
-      case 'Blocked':
-        return '🚫'
-      default:
-        return '📋'
-    }
-  }
+  const getStatusIcon = (status) => <StatusIcon status={status} />
 
-  const getWorkTypeIcon = (workType) => {
-    switch (workType) {
-      case 'Frontend':
-        return '🎨'
-      case 'Backend':
-        return '⚙️'
-      case 'Database':
-        return '🗄️'
-      case 'UI/UX Design':
-        return '✨'
-      case 'DevOps':
-        return '🚀'
-      case 'Testing':
-        return '🧪'
-      case 'Full Stack':
-        return '💻'
-      default:
-        return '💼'
-    }
-  }
+  const getWorkTypeIcon = (workType) => <WorkTypeIcon workType={workType} />
 
   const getWorkTypeColor = (workType) => {
     switch (workType) {
@@ -129,23 +100,15 @@ const MyTasks = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your tasks...</p>
-        </div>
-      </div>
-    )
+    return <PageSkeleton variant="dense" cards={6} rows={6} />
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">My Tasks</h1>
-        <p className="text-gray-600 mt-1">Manage your assigned tasks across all sprints</p>
-      </div>
+      <PageHeader
+        title="My Tasks"
+        subtitle="Manage your assigned tasks across all sprints."
+      />
 
       {/* Stats Cards */}
       <div className="grid md:grid-cols-6 gap-4 mb-8">
@@ -199,7 +162,7 @@ const MyTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              📋 To Do ({stats.todo})
+              To Do ({stats.todo})
             </button>
             <button
               onClick={() => setFilterStatus('In Progress')}
@@ -209,7 +172,7 @@ const MyTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              ⚡ In Progress ({stats.inProgress})
+              In Progress ({stats.inProgress})
             </button>
             <button
               onClick={() => setFilterStatus('Pending Review')}
@@ -219,7 +182,7 @@ const MyTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              👀 Review ({stats.pendingReview})
+              Review ({stats.pendingReview})
             </button>
             <button
               onClick={() => setFilterStatus('Completed')}
@@ -229,7 +192,7 @@ const MyTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              ✅ Completed ({stats.completed})
+              Completed ({stats.completed})
             </button>
             <button
               onClick={() => setFilterStatus('Blocked')}
@@ -239,7 +202,7 @@ const MyTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              🚫 Blocked ({stats.blocked})
+              Blocked ({stats.blocked})
             </button>
           </div>
         </div>
@@ -299,7 +262,7 @@ const MyTasks = () => {
                       </div>
                       {task.reviewNotes && (
                         <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                          <p className="font-semibold text-yellow-800 mb-1">📝 Review Notes:</p>
+                          <p className="font-semibold text-yellow-800 mb-1">Review Notes:</p>
                           <p className="text-yellow-700">{task.reviewNotes}</p>
                           {task.reviewedBy && (
                             <p className="text-yellow-600 mt-1 text-xs">— {task.reviewedBy.name}</p>
@@ -316,10 +279,10 @@ const MyTasks = () => {
                             onChange={(e) => handleStatusChange(task._id, e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[160px]"
                           >
-                            <option value="To Do">📋 To Do</option>
-                            <option value="In Progress">⚡ In Progress</option>
-                            <option value="Pending Review">👀 Submit for Review</option>
-                            <option value="Blocked">🚫 Blocked</option>
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Pending Review">Submit for Review</option>
+                            <option value="Blocked">Blocked</option>
                           </select>
                           <p className="text-xs text-gray-500 mt-1">Submit when done</p>
                         </div>
@@ -331,11 +294,11 @@ const MyTasks = () => {
                             onChange={(e) => handleStatusChange(task._id, e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[160px]"
                           >
-                            <option value="To Do">📋 To Do</option>
-                            <option value="In Progress">⚡ In Progress</option>
-                            <option value="Pending Review">👀 Pending Review</option>
-                            <option value="Completed">✅ Completed</option>
-                            <option value="Blocked">🚫 Blocked</option>
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Pending Review">Pending Review</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Blocked">Blocked</option>
                           </select>
                         </div>
                       )}

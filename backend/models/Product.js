@@ -34,4 +34,8 @@ const productSchema = new mongoose.Schema({
   }
 });
 
+// Common read/query paths
+productSchema.index({ createdBy: 1, createdAt: -1 });
+productSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Product', productSchema);

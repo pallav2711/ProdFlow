@@ -5,6 +5,8 @@
 
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const { validationError, unauthorizedError, conflictError } = require('../utils/errorFactory');
+const sendSuccess = require('../utils/successResponse');
 
 // Generate JWT access token (short-lived)
 const generateAccessToken = (id, rememberMe = false) => {
@@ -23,17 +25,14 @@ const generateRefreshToken = (id) => {
 // @desc    Register new user
 // @route   POST /api/auth/register
 // @access  Public
-exports.register = async (req, res) => {
+exports.register = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
 
     // Check if user exists
     const userExists = await User.findOne({ email });
     if (userExists) {
-      return res.status(400).json({
-        success: false,
-        message: 'User already exists'
-      });
+      return next(conflictError('User already exists', 'USER_ALREADY_EXISTS'));
     }
 
     // Create user
@@ -57,56 +56,46 @@ exports.register = async (req, res) => {
       await user.save();
     }
 
-    res.status(201).json({
-      success: true,
-      accessToken,
-      refreshToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
+    return sendSuccess(res, {
+      statusCode: 201,
+      data: {
+        accessToken,
+        refreshToken,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
       }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Login user
 // @route   POST /api/auth/login
 // @access  Public
-exports.login = async (req, res) => {
+exports.login = async (req, res, next) => {
   try {
     const { email, password, rememberMe = true } = req.body;
 
     // Validate input
     if (!email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide email and password'
-      });
+      return next(validationError('Please provide email and password'));
     }
 
     // Check for user (include password for comparison)
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+      return next(unauthorizedError('Invalid credentials', 'INVALID_CREDENTIALS'));
     }
 
     // Check password
     const isMatch = await user.comparePassword(password);
     if (!isMatch) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
+      return next(unauthorizedError('Invalid credentials', 'INVALID_CREDENTIALS'));
     }
 
     // Generate tokens
@@ -119,38 +108,33 @@ exports.login = async (req, res) => {
       await user.save();
     }
 
-    res.status(200).json({
-      success: true,
-      accessToken,
-      refreshToken,
-      rememberMe,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
+    return sendSuccess(res, {
+      data: {
+        accessToken,
+        refreshToken,
+        rememberMe,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
       }
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Refresh access token
 // @route   POST /api/auth/refresh
 // @access  Public
-exports.refreshToken = async (req, res) => {
+exports.refreshToken = async (req, res, next) => {
   try {
     const { refreshToken } = req.body;
 
     if (!refreshToken) {
-      return res.status(401).json({
-        success: false,
-        message: 'Refresh token required'
-      });
+      return next(unauthorizedError('Refresh token required', 'REFRESH_TOKEN_REQUIRED'));
     }
 
     // Verify refresh token
@@ -159,56 +143,45 @@ exports.refreshToken = async (req, res) => {
     // Find user and check if refresh token matches
     const user = await User.findById(decoded.id);
     if (!user || user.refreshToken !== refreshToken) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid refresh token'
-      });
+      return next(unauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN'));
     }
 
     // Generate new access token
     const newAccessToken = generateAccessToken(user._id);
 
-    res.status(200).json({
-      success: true,
-      accessToken: newAccessToken,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role
+    return sendSuccess(res, {
+      data: {
+        accessToken: newAccessToken,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
       }
     });
   } catch (error) {
-    res.status(401).json({
-      success: false,
-      message: 'Invalid refresh token'
-    });
+    return next(unauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN'));
   }
 };
 
 // @desc    Get current logged in user
 // @route   GET /api/auth/me
 // @access  Private
-exports.getMe = async (req, res) => {
+exports.getMe = async (req, res, next) => {
   try {
     const user = await User.findById(req.user.id);
     
-    res.status(200).json({
-      success: true,
-      user
-    });
+    return sendSuccess(res, { data: { user } });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Logout user
 // @route   POST /api/auth/logout
 // @access  Private
-exports.logout = async (req, res) => {
+exports.logout = async (req, res, next) => {
   try {
     // Clear refresh token from database
     const user = await User.findById(req.user.id);
@@ -217,14 +190,8 @@ exports.logout = async (req, res) => {
       await user.save();
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'Logged out successfully'
-    });
+    return sendSuccess(res, { message: 'Logged out successfully' });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };

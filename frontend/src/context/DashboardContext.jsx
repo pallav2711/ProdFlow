@@ -28,6 +28,11 @@ export const DashboardProvider = ({ children }) => {
     myTasks: [],
     allTasks: [],
     sprints: [],
+    pagination: {
+      products: null,
+      sprints: null,
+      myTasks: null
+    },
     loading: false,
     lastFetch: null,
     error: null
@@ -41,7 +46,14 @@ export const DashboardProvider = ({ children }) => {
     return Date.now() - dashboardData.lastFetch > CACHE_DURATION
   }
 
-  const fetchDashboardData = async (forceRefresh = false) => {
+  const toPaginationParams = (paginationConfig) => {
+    if (!paginationConfig) return undefined
+    const page = Number(paginationConfig.page || 1)
+    const limit = Number(paginationConfig.limit || 20)
+    return { page, limit }
+  }
+
+  const fetchDashboardData = async (forceRefresh = false, options = {}) => {
     // Don't fetch if user is not authenticated
     if (!user) {
       console.log('User not authenticated, skipping dashboard data fetch')
@@ -58,10 +70,14 @@ export const DashboardProvider = ({ children }) => {
     setDashboardData(prev => ({ ...prev, loading: true, error: null }))
 
     try {
+      const sprintsParams = toPaginationParams(options?.pagination?.sprints)
+      const productsParams = toPaginationParams(options?.pagination?.products)
+      const myTasksParams = toPaginationParams(options?.pagination?.myTasks)
+
       const [sprintsRes, productsRes, myTasksRes] = await Promise.all([
-        api.get('/sprints'),
-        api.get('/products'),
-        api.get('/sprints/my-tasks')
+        api.get('/sprints', { params: sprintsParams }),
+        api.get('/products', { params: productsParams }),
+        api.get('/sprints/my-tasks', { params: myTasksParams })
       ])
       
       const sprintsData = sprintsRes.data.sprints || []
@@ -94,6 +110,26 @@ export const DashboardProvider = ({ children }) => {
         myTasks: userTasks,
         allTasks: allTasksData,
         sprints: sprintsData,
+        pagination: {
+          products: productsRes.data?.totalCount !== undefined ? {
+            totalCount: productsRes.data.totalCount,
+            page: productsRes.data.page,
+            limit: productsRes.data.limit,
+            totalPages: productsRes.data.totalPages
+          } : null,
+          sprints: sprintsRes.data?.totalCount !== undefined ? {
+            totalCount: sprintsRes.data.totalCount,
+            page: sprintsRes.data.page,
+            limit: sprintsRes.data.limit,
+            totalPages: sprintsRes.data.totalPages
+          } : null,
+          myTasks: myTasksRes.data?.totalCount !== undefined ? {
+            totalCount: myTasksRes.data.totalCount,
+            page: myTasksRes.data.page,
+            limit: myTasksRes.data.limit,
+            totalPages: myTasksRes.data.totalPages
+          } : null
+        },
         loading: false,
         lastFetch: Date.now(),
         error: null
@@ -118,6 +154,11 @@ export const DashboardProvider = ({ children }) => {
         myTasks: [],
         allTasks: [],
         sprints: [],
+        pagination: {
+          products: null,
+          sprints: null,
+          myTasks: null
+        },
         loading: false,
         lastFetch: Date.now(),
         error: error.response?.data?.message || error.message || 'Failed to fetch dashboard data'
@@ -223,6 +264,11 @@ export const DashboardProvider = ({ children }) => {
       myTasks: [],
       allTasks: [],
       sprints: [],
+      pagination: {
+        products: null,
+        sprints: null,
+        myTasks: null
+      },
       loading: false,
       lastFetch: null,
       error: null

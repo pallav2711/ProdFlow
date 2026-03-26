@@ -13,6 +13,8 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
 const errorHandler = require('./middleware/errorHandler');
+const requestContext = require('./middleware/requestContext');
+const AppError = require('./utils/appError');
 
 // Load environment variables from .env file
 const envPath = path.join(__dirname, '.env');
@@ -46,6 +48,9 @@ const app = express();
 
 // Connect to MongoDB with optimized settings
 connectDB();
+
+// Request context middleware (request id + request timing logs)
+app.use(requestContext);
 
 // Performance and Security Middleware
 app.use(helmet({
@@ -140,8 +145,11 @@ const limiter = rateLimit({
   handler: (req, res) => {
     res.status(429).json({
       success: false,
+      code: 'RATE_LIMITED',
       message: 'Too many requests from this IP, please try again later.',
-      retryAfter: '15 minutes'
+      retryAfter: '15 minutes',
+      requestId: req.requestId,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -249,12 +257,16 @@ app.use('/api/', limiter);
 app.use(express.json({ 
   limit: '1mb',
   verify: (req, res, buf) => {
+    // Empty body is valid for routes that do not require JSON payload.
+    if (!buf || buf.length === 0) {
+      return;
+    }
+
     // Prevent JSON pollution attacks
     try {
       JSON.parse(buf);
     } catch (e) {
-      res.status(400).json({ success: false, message: 'Invalid JSON format' });
-      return;
+      throw new AppError('Invalid JSON format', 400, 'INVALID_JSON');
     }
   }
 }));
@@ -347,12 +359,12 @@ app.get('/health', (req, res) => res.redirect('/api/health'));
 app.get('/ping', (req, res) => res.redirect('/api/health/ping'));
 
 // 404 handler for API routes
-app.use('/api/*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    message: 'API endpoint not found',
-    path: req.originalUrl
-  });
+app.use('/api/*', (req, res, next) => {
+  next(
+    new AppError('API endpoint not found', 404, 'API_ROUTE_NOT_FOUND', {
+      path: req.originalUrl
+    })
+  );
 });
 
 // Global error handling middleware
@@ -377,6 +389,11 @@ const server = app.listen(PORT, () => {
   console.log(`📦 Compression enabled`);
   console.log(`⚡ Performance optimizations active`);
 });
+
+// Server-level timeout guards to prevent slow clients/dependencies from stalling resources.
+server.requestTimeout = parseInt(process.env.SERVER_REQUEST_TIMEOUT_MS || '30000', 10);
+server.headersTimeout = parseInt(process.env.SERVER_HEADERS_TIMEOUT_MS || '35000', 10);
+server.keepAliveTimeout = parseInt(process.env.SERVER_KEEP_ALIVE_TIMEOUT_MS || '5000', 10);
 
 // Handle server errors
 server.on('error', (err) => {

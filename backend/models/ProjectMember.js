@@ -47,5 +47,8 @@ const projectMemberSchema = new mongoose.Schema({
 
 // Compound index to ensure a user can only have one role per product
 projectMemberSchema.index({ product: 1, user: 1 }, { unique: true });
+projectMemberSchema.index({ user: 1, status: 1, invitedAt: -1 });
+projectMemberSchema.index({ product: 1, status: 1, invitedAt: -1 });
+projectMemberSchema.index({ product: 1, role: 1, status: 1 });
 
 module.exports = mongoose.model('ProjectMember', projectMemberSchema);

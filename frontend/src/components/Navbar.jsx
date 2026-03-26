@@ -2,16 +2,16 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useState, useEffect } from 'react'
 import api from '../api/config'
-import SystemStatus from './SystemStatus'
+import { useToast } from '../context/ToastContext'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const isLanding = location.pathname === '/'
+  const { showToast } = useToast()
   const [invitations, setInvitations] = useState([])
   const [showInvitationsModal, setShowInvitationsModal] = useState(false)
-  const [showSystemStatus, setShowSystemStatus] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -32,21 +32,21 @@ const Navbar = () => {
   const handleAcceptInvitation = async (invitationId) => {
     try {
       await api.put(`/teams/invitations/${invitationId}/accept`)
-      alert('Invitation accepted!')
+      showToast('Invitation accepted!', 'success')
       fetchInvitations()
       setShowInvitationsModal(false)
     } catch (error) {
-      alert(error.response?.data?.message || 'Error accepting invitation')
+      showToast(error.response?.data?.message || 'Error accepting invitation', 'error')
     }
   }
 
   const handleRejectInvitation = async (invitationId) => {
     try {
       await api.put(`/teams/invitations/${invitationId}/reject`)
-      alert('Invitation rejected')
+      showToast('Invitation rejected.', 'success')
       fetchInvitations()
     } catch (error) {
-      alert(error.response?.data?.message || 'Error rejecting invitation')
+      showToast(error.response?.data?.message || 'Error rejecting invitation', 'error')
     }
   }
 
@@ -68,6 +68,22 @@ const Navbar = () => {
     setMobileMenuOpen(false)
   }
 
+  const isActiveRoute = (path) => location.pathname === path
+
+  const getDesktopNavLinkClass = (path) => {
+    const baseClass = 'inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium touch-target transition-all duration-200'
+    return isActiveRoute(path)
+      ? `${baseClass} text-accent bg-indigo-50/70 shadow-sm`
+      : `${baseClass} text-gray-700 hover:text-accent hover:bg-gray-50 hover:-translate-y-0.5`
+  }
+
+  const getMobileNavLinkClass = (path) => {
+    const baseClass = 'mobile-nav-item transition-all duration-200 rounded-lg'
+    return isActiveRoute(path)
+      ? `${baseClass} text-accent bg-indigo-50/70 font-medium`
+      : `${baseClass} text-gray-700 hover:text-accent hover:bg-gray-50`
+  }
+
   return (
     <>
       <nav className="fixed top-0 left-0 right-0 z-50 px-2 sm:px-4 lg:px-8 pt-2 sm:pt-4 transition-all duration-300">
@@ -80,74 +96,71 @@ const Navbar = () => {
             </div>
 
             {/* Desktop Navigation */}
-            <div className="hidden lg:flex items-center space-x-4 xl:space-x-6">
+            <div className="hidden lg:flex items-center">
               {user ? (
-                <>
-                  <Link to="/dashboard" className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
-                    Dashboard
-                  </Link>
-                  
-                  {user.role === 'Product Manager' && (
-                    <Link to="/product-planning" className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
-                      Product Planning
+                <div className="flex items-center gap-5 xl:gap-7">
+                  <div className="flex items-center gap-1 xl:gap-2">
+                    <Link to="/dashboard" className={getDesktopNavLinkClass('/dashboard')}>
+                      Dashboard
                     </Link>
-                  )}
-                  
-                  {user.role === 'Team Lead' && (
-                    <>
-                      <Link to="/sprint-planner" className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
-                        Sprint Planner
+                    
+                    {user.role === 'Product Manager' && (
+                      <Link to="/product-planning" className={getDesktopNavLinkClass('/product-planning')}>
+                        Product Planning
                       </Link>
-                      <Link to="/all-team-tasks" className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
-                        All Team Tasks
-                      </Link>
-                      <Link to="/sprint-history" className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
-                        Sprint History
-                      </Link>
-                    </>
-                  )}
-
-                  {(user.role === 'Developer' || user.role === 'Product Manager') && (
-                    <Link to="/my-tasks" className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
-                      My Tasks
-                    </Link>
-                  )}
-
-                  {/* System Status Button (Development) */}
-                  {import.meta.env.DEV && (
-                    <button
-                      onClick={() => setShowSystemStatus(true)}
-                      className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target"
-                      title="System Status"
-                    >
-                      🔧
-                    </button>
-                  )}
-
-                  {/* Invitations Badge */}
-                  <button
-                    onClick={() => setShowInvitationsModal(true)}
-                    className="relative text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target"
-                  >
-                    Invitations
-                    {invitations.length > 0 && (
-                      <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
-                        {invitations.length}
-                      </span>
                     )}
-                  </button>
-                  
-                  <span className="text-xs xl:text-sm text-gray-600 hidden xl:block">
-                    {user.name} ({user.role})
-                  </span>
-                  
-                  <button
-                    onClick={handleLogout}
-                    className="bg-accent text-white px-4 xl:px-5 py-2.5 rounded-lg hover:bg-gray-800 transition-all hover:shadow-lg text-sm font-medium touch-target"
-                  >
-                    Logout
-                  </button>
-                </>
+                    
+                    {user.role === 'Team Lead' && (
+                      <>
+                        <Link to="/sprint-planner" className={getDesktopNavLinkClass('/sprint-planner')}>
+                          Sprint Planner
+                        </Link>
+                        <Link to="/all-team-tasks" className={getDesktopNavLinkClass('/all-team-tasks')}>
+                          All Team Tasks
+                        </Link>
+                        <Link to="/sprint-history" className={getDesktopNavLinkClass('/sprint-history')}>
+                          Sprint History
+                        </Link>
+                      </>
+                    )}
+
+                    {(user.role === 'Developer' || user.role === 'Product Manager') && (
+                      <Link to="/my-tasks" className={getDesktopNavLinkClass('/my-tasks')}>
+                        My Tasks
+                      </Link>
+                    )}
+
+                    {/* Invitations Badge */}
+                    <button
+                      onClick={() => setShowInvitationsModal(true)}
+                      className={`relative inline-flex h-10 items-center rounded-lg px-3 text-sm font-medium touch-target transition-all duration-200 ${
+                        showInvitationsModal
+                          ? 'text-accent bg-indigo-50/70 shadow-sm'
+                          : 'text-gray-700 hover:text-accent hover:bg-gray-50 hover:-translate-y-0.5'
+                      }`}
+                    >
+                      Invitations
+                      {invitations.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                          {invitations.length}
+                        </span>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center h-10 gap-3">
+                    <span className="text-xs xl:text-sm text-gray-600 hidden xl:block leading-none">
+                      {user.name} ({user.role})
+                    </span>
+                    
+                    <button
+                      onClick={handleLogout}
+                      className="inline-flex h-10 items-center bg-accent text-white px-4 xl:px-5 rounded-lg text-sm font-medium touch-target transition-all duration-200 hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <>
                   {isLanding && (
@@ -213,7 +226,7 @@ const Navbar = () => {
                     
                     <Link 
                       to="/dashboard" 
-                      className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                      className={getMobileNavLinkClass('/dashboard')}
                       onClick={closeMobileMenu}
                     >
                       Dashboard
@@ -222,7 +235,7 @@ const Navbar = () => {
                     {user.role === 'Product Manager' && (
                       <Link 
                         to="/product-planning" 
-                        className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                        className={getMobileNavLinkClass('/product-planning')}
                         onClick={closeMobileMenu}
                       >
                         Product Planning
@@ -233,21 +246,21 @@ const Navbar = () => {
                       <>
                         <Link 
                           to="/sprint-planner" 
-                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                          className={getMobileNavLinkClass('/sprint-planner')}
                           onClick={closeMobileMenu}
                         >
                           Sprint Planner
                         </Link>
                         <Link 
                           to="/all-team-tasks" 
-                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                          className={getMobileNavLinkClass('/all-team-tasks')}
                           onClick={closeMobileMenu}
                         >
                           All Team Tasks
                         </Link>
                         <Link 
                           to="/sprint-history" 
-                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                          className={getMobileNavLinkClass('/sprint-history')}
                           onClick={closeMobileMenu}
                         >
                           Sprint History
@@ -258,7 +271,7 @@ const Navbar = () => {
                     {(user.role === 'Developer' || user.role === 'Product Manager') && (
                       <Link 
                         to="/my-tasks" 
-                        className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                        className={getMobileNavLinkClass('/my-tasks')}
                         onClick={closeMobileMenu}
                       >
                         My Tasks
@@ -270,7 +283,11 @@ const Navbar = () => {
                         setShowInvitationsModal(true)
                         closeMobileMenu()
                       }}
-                      className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg flex items-center justify-between"
+                      className={`mobile-nav-item rounded-lg flex items-center justify-between transition-all duration-200 ${
+                        showInvitationsModal
+                          ? 'text-accent bg-indigo-50/70 font-medium'
+                          : 'text-gray-700 hover:text-accent hover:bg-gray-50'
+                      }`}
                     >
                       <span>Invitations</span>
                       {invitations.length > 0 && (
@@ -388,10 +405,6 @@ const Navbar = () => {
             )}
           </div>
         </div>
-      )}
-      {/* System Status Modal */}
-      {showSystemStatus && (
-        <SystemStatus onClose={() => setShowSystemStatus(false)} />
       )}
     </>
   )

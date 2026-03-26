@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { normalizeApiError } from '../utils/apiError';
 
 // Create axios instance with optimized configuration
 const api = axios.create({
@@ -170,14 +171,18 @@ api.interceptors.response.use(
     }
 
     // Log errors in development
+    const normalizedError = normalizeApiError(error);
+    error.normalizedError = normalizedError;
+
     if (import.meta.env.DEV) {
       console.error('API Error:', {
         url: error.config?.url,
         method: error.config?.method,
-        status: error.response?.status,
-        message: error.message,
+        status: normalizedError.status,
+        code: normalizedError.code,
+        message: normalizedError.message,
         data: error.response?.data,
-        requestId: error.config?.headers?.['X-Request-ID']
+        requestId: normalizedError.requestId
       });
     }
 

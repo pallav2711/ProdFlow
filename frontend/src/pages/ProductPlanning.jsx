@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/config'
+import { useToast } from '../context/ToastContext'
+import PageHeader from '../components/PageHeader'
+import PageSkeleton from '../components/PageSkeleton'
+import { WorkTypeIcon } from '../components/AppIcons'
 
 const ProductPlanning = () => {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [products, setProducts] = useState([])
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [features, setFeatures] = useState([])
@@ -31,6 +36,7 @@ const ProductPlanning = () => {
     vision: '',
     description: ''
   })
+  const [productFormErrors, setProductFormErrors] = useState({})
 
   const [featureForm, setFeatureForm] = useState({
     name: '',
@@ -39,6 +45,40 @@ const ProductPlanning = () => {
     businessValue: 5,
     estimatedEffort: 0
   })
+  const [featureFormErrors, setFeatureFormErrors] = useState({})
+  const [isSubmittingInvite, setIsSubmittingInvite] = useState(false)
+  const [isSubmittingProductCreate, setIsSubmittingProductCreate] = useState(false)
+  const [isSubmittingProductEdit, setIsSubmittingProductEdit] = useState(false)
+  const [isSubmittingFeatureCreate, setIsSubmittingFeatureCreate] = useState(false)
+  const [isSubmittingFeatureEdit, setIsSubmittingFeatureEdit] = useState(false)
+
+  const validateProductForm = () => {
+    const errors = {}
+    if (!productForm.name?.trim() || productForm.name.trim().length < 3) {
+      errors.name = 'Product name must be at least 3 characters.'
+    }
+    if (!productForm.vision?.trim() || productForm.vision.trim().length < 10) {
+      errors.vision = 'Vision should be at least 10 characters.'
+    }
+    return errors
+  }
+
+  const validateFeatureForm = () => {
+    const errors = {}
+    if (!featureForm.name?.trim() || featureForm.name.trim().length < 3) {
+      errors.name = 'Feature name must be at least 3 characters.'
+    }
+    if (!featureForm.description?.trim() || featureForm.description.trim().length < 10) {
+      errors.description = 'Description should be at least 10 characters.'
+    }
+    if (Number.isNaN(Number(featureForm.businessValue)) || Number(featureForm.businessValue) < 1 || Number(featureForm.businessValue) > 10) {
+      errors.businessValue = 'Business value must be between 1 and 10.'
+    }
+    if (Number.isNaN(Number(featureForm.estimatedEffort)) || Number(featureForm.estimatedEffort) <= 0) {
+      errors.estimatedEffort = 'Estimated effort must be greater than 0.'
+    }
+    return errors
+  }
 
   // Fetch data when component mounts or user changes
   useEffect(() => {
@@ -111,6 +151,7 @@ const ProductPlanning = () => {
 
   const handleInviteMember = async (e) => {
     e.preventDefault()
+    setIsSubmittingInvite(true)
     try {
       await api.post(`/teams/invite`, {
         productId: selectedProduct._id,
@@ -118,13 +159,15 @@ const ProductPlanning = () => {
         role: inviteRole,
         specialization: inviteSpecialization
       })
-      alert('Invitation sent successfully!')
+      showToast('Invitation sent successfully!', 'success')
       setInviteEmail('')
       setInviteRole('Developer')
       setInviteSpecialization('None')
       fetchTeamMembers(selectedProduct._id)
     } catch (error) {
-      alert(error.response?.data?.message || 'Error sending invitation')
+      showToast(error.response?.data?.message || 'Error sending invitation', 'error')
+    } finally {
+      setIsSubmittingInvite(false)
     }
   }
 
@@ -132,23 +175,32 @@ const ProductPlanning = () => {
     if (!confirm('Are you sure you want to remove this member?')) return
     try {
       await api.delete(`/teams/${memberId}`)
-      alert('Member removed successfully')
+      showToast('Member removed successfully.', 'success')
       fetchTeamMembers(selectedProduct._id)
     } catch (error) {
-      alert(error.response?.data?.message || 'Error removing member')
+      showToast(error.response?.data?.message || 'Error removing member', 'error')
     }
   }
 
   const handleProductSubmit = async (e) => {
     e.preventDefault()
+    const errors = validateProductForm()
+    setProductFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      showToast('Please fix highlighted product fields.', 'error')
+      return
+    }
+    setIsSubmittingProductCreate(true)
     try {
       await api.post('/products', productForm)
-      alert('Product created successfully!')
+      showToast('Product created successfully!', 'success')
       setShowProductModal(false)
       setProductForm({ name: '', vision: '', description: '' })
       fetchProducts()
     } catch (error) {
-      alert(error.response?.data?.message || 'Error creating product')
+      showToast(error.response?.data?.message || 'Error creating product', 'error')
+    } finally {
+      setIsSubmittingProductCreate(false)
     }
   }
 
@@ -164,9 +216,16 @@ const ProductPlanning = () => {
 
   const handleEditProductSubmit = async (e) => {
     e.preventDefault()
+    const errors = validateProductForm()
+    setProductFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      showToast('Please fix highlighted product fields.', 'error')
+      return
+    }
+    setIsSubmittingProductEdit(true)
     try {
       await api.put(`/products/${productToEdit._id}`, productForm)
-      alert('Product updated successfully!')
+      showToast('Product updated successfully!', 'success')
       setShowEditProductModal(false)
       setProductToEdit(null)
       setProductForm({ name: '', vision: '', description: '' })
@@ -176,7 +235,9 @@ const ProductPlanning = () => {
         setSelectedProduct(updatedProduct.data.product)
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Error updating product')
+      showToast(error.response?.data?.message || 'Error updating product', 'error')
+    } finally {
+      setIsSubmittingProductEdit(false)
     }
   }
 
@@ -195,22 +256,31 @@ const ProductPlanning = () => {
         setFeatures([])
       }
       fetchProducts()
-      alert('Product deleted successfully!')
+      showToast('Product deleted successfully!', 'success')
     } catch (error) {
-      alert(error.response?.data?.message || 'Error deleting product')
+      showToast(error.response?.data?.message || 'Error deleting product', 'error')
     }
   }
 
   const handleFeatureSubmit = async (e) => {
     e.preventDefault()
+    const errors = validateFeatureForm()
+    setFeatureFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      showToast('Please fix highlighted feature fields.', 'error')
+      return
+    }
+    setIsSubmittingFeatureCreate(true)
     try {
       await api.post(`/products/${selectedProduct._id}/features`, featureForm)
-      alert('Feature created successfully!')
+      showToast('Feature created successfully!', 'success')
       setShowFeatureModal(false)
       setFeatureForm({ name: '', description: '', priority: 'Medium', businessValue: 5, estimatedEffort: 0 })
       fetchFeatures(selectedProduct._id)
     } catch (error) {
-      alert(error.response?.data?.message || 'Error creating feature')
+      showToast(error.response?.data?.message || 'Error creating feature', 'error')
+    } finally {
+      setIsSubmittingFeatureCreate(false)
     }
   }
 
@@ -228,15 +298,24 @@ const ProductPlanning = () => {
 
   const handleEditFeatureSubmit = async (e) => {
     e.preventDefault()
+    const errors = validateFeatureForm()
+    setFeatureFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      showToast('Please fix highlighted feature fields.', 'error')
+      return
+    }
+    setIsSubmittingFeatureEdit(true)
     try {
       await api.put(`/products/features/${featureToEdit._id}`, featureForm)
-      alert('Feature updated successfully!')
+      showToast('Feature updated successfully!', 'success')
       setShowEditFeatureModal(false)
       setFeatureToEdit(null)
       setFeatureForm({ name: '', description: '', priority: 'Medium', businessValue: 5, estimatedEffort: 0 })
       fetchFeatures(selectedProduct._id)
     } catch (error) {
-      alert(error.response?.data?.message || 'Error updating feature')
+      showToast(error.response?.data?.message || 'Error updating feature', 'error')
+    } finally {
+      setIsSubmittingFeatureEdit(false)
     }
   }
 
@@ -251,9 +330,9 @@ const ProductPlanning = () => {
       setShowDeleteFeatureModal(false)
       setFeatureToDelete(null)
       fetchFeatures(selectedProduct._id)
-      alert('Feature deleted successfully!')
+      showToast('Feature deleted successfully!', 'success')
     } catch (error) {
-      alert(error.response?.data?.message || 'Error deleting feature')
+      showToast(error.response?.data?.message || 'Error deleting feature', 'error')
     }
   }
 
@@ -264,32 +343,23 @@ const ProductPlanning = () => {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+    return <PageSkeleton variant="dense" cards={3} rows={6} />
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Product Planning</h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => fetchProducts()}
-            disabled={loading}
-            className="bg-gray-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-700 transition-all hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
+      <PageHeader
+        title="Product Planning"
+        subtitle="Define products, manage features, and organize your team."
+        rightContent={
           <button
             onClick={() => setShowProductModal(true)}
             className="bg-accent text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5"
           >
             Create Product
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {error && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -457,8 +527,9 @@ const ProductPlanning = () => {
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${productFormErrors.name ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {productFormErrors.name && <p className="text-xs text-red-600 mt-1">{productFormErrors.name}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Vision</label>
@@ -467,8 +538,9 @@ const ProductPlanning = () => {
                   onChange={(e) => setProductForm({ ...productForm, vision: e.target.value })}
                   required
                   rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${productFormErrors.vision ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {productFormErrors.vision && <p className="text-xs text-red-600 mt-1">{productFormErrors.vision}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
@@ -480,8 +552,12 @@ const ProductPlanning = () => {
                 />
               </div>
               <div className="flex space-x-2">
-                <button type="submit" className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800">
-                  Create
+                <button
+                  type="submit"
+                  disabled={isSubmittingProductCreate}
+                  className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingProductCreate ? 'Creating...' : 'Create'}
                 </button>
                 <button
                   type="button"
@@ -509,8 +585,9 @@ const ProductPlanning = () => {
                   value={productForm.name}
                   onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${productFormErrors.name ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {productFormErrors.name && <p className="text-xs text-red-600 mt-1">{productFormErrors.name}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Vision</label>
@@ -519,8 +596,9 @@ const ProductPlanning = () => {
                   onChange={(e) => setProductForm({ ...productForm, vision: e.target.value })}
                   required
                   rows="3"
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${productFormErrors.vision ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {productFormErrors.vision && <p className="text-xs text-red-600 mt-1">{productFormErrors.vision}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
@@ -532,8 +610,12 @@ const ProductPlanning = () => {
                 />
               </div>
               <div className="flex space-x-2">
-                <button type="submit" className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800">
-                  Update
+                <button
+                  type="submit"
+                  disabled={isSubmittingProductEdit}
+                  className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingProductEdit ? 'Updating...' : 'Update'}
                 </button>
                 <button
                   type="button"
@@ -606,8 +688,9 @@ const ProductPlanning = () => {
                   value={featureForm.name}
                   onChange={(e) => setFeatureForm({ ...featureForm, name: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${featureFormErrors.name ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {featureFormErrors.name && <p className="text-xs text-red-600 mt-1">{featureFormErrors.name}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
@@ -616,8 +699,9 @@ const ProductPlanning = () => {
                   onChange={(e) => setFeatureForm({ ...featureForm, description: e.target.value })}
                   required
                   rows="2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${featureFormErrors.description ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {featureFormErrors.description && <p className="text-xs text-red-600 mt-1">{featureFormErrors.description}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Priority</label>
@@ -640,8 +724,9 @@ const ProductPlanning = () => {
                   value={featureForm.businessValue}
                   onChange={(e) => setFeatureForm({ ...featureForm, businessValue: parseInt(e.target.value) })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${featureFormErrors.businessValue ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {featureFormErrors.businessValue && <p className="text-xs text-red-600 mt-1">{featureFormErrors.businessValue}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Estimated Effort (hours)</label>
@@ -651,12 +736,17 @@ const ProductPlanning = () => {
                   value={featureForm.estimatedEffort}
                   onChange={(e) => setFeatureForm({ ...featureForm, estimatedEffort: parseFloat(e.target.value) })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${featureFormErrors.estimatedEffort ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {featureFormErrors.estimatedEffort && <p className="text-xs text-red-600 mt-1">{featureFormErrors.estimatedEffort}</p>}
               </div>
               <div className="flex space-x-2">
-                <button type="submit" className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800">
-                  Add Feature
+                <button
+                  type="submit"
+                  disabled={isSubmittingFeatureCreate}
+                  className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingFeatureCreate ? 'Adding...' : 'Add Feature'}
                 </button>
                 <button
                   type="button"
@@ -684,8 +774,9 @@ const ProductPlanning = () => {
                   value={featureForm.name}
                   onChange={(e) => setFeatureForm({ ...featureForm, name: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${featureFormErrors.name ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {featureFormErrors.name && <p className="text-xs text-red-600 mt-1">{featureFormErrors.name}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Description</label>
@@ -694,8 +785,9 @@ const ProductPlanning = () => {
                   onChange={(e) => setFeatureForm({ ...featureForm, description: e.target.value })}
                   required
                   rows="2"
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${featureFormErrors.description ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {featureFormErrors.description && <p className="text-xs text-red-600 mt-1">{featureFormErrors.description}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Priority</label>
@@ -718,8 +810,9 @@ const ProductPlanning = () => {
                   value={featureForm.businessValue}
                   onChange={(e) => setFeatureForm({ ...featureForm, businessValue: parseInt(e.target.value) })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${featureFormErrors.businessValue ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {featureFormErrors.businessValue && <p className="text-xs text-red-600 mt-1">{featureFormErrors.businessValue}</p>}
               </div>
               <div>
                 <label className="block text-sm font-medium mb-1">Estimated Effort (hours)</label>
@@ -729,12 +822,17 @@ const ProductPlanning = () => {
                   value={featureForm.estimatedEffort}
                   onChange={(e) => setFeatureForm({ ...featureForm, estimatedEffort: parseFloat(e.target.value) })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded"
+                  className={`w-full px-3 py-2 border rounded ${featureFormErrors.estimatedEffort ? 'border-red-400' : 'border-gray-300'}`}
                 />
+                {featureFormErrors.estimatedEffort && <p className="text-xs text-red-600 mt-1">{featureFormErrors.estimatedEffort}</p>}
               </div>
               <div className="flex space-x-2">
-                <button type="submit" className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800">
-                  Update
+                <button
+                  type="submit"
+                  disabled={isSubmittingFeatureEdit}
+                  className="flex-1 bg-black text-white py-2 rounded hover:bg-gray-800 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {isSubmittingFeatureEdit ? 'Updating...' : 'Update'}
                 </button>
                 <button
                   type="button"
@@ -854,13 +952,13 @@ const ProductPlanning = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     >
                       <option value="None">No Specialization</option>
-                      <option value="Frontend">🎨 Frontend Developer</option>
-                      <option value="Backend">⚙️ Backend Developer</option>
-                      <option value="Database">🗄️ Database Specialist</option>
-                      <option value="UI/UX Design">✨ UI/UX Designer</option>
-                      <option value="DevOps">🚀 DevOps Engineer</option>
-                      <option value="Testing">🧪 QA/Testing</option>
-                      <option value="Full Stack">💻 Full Stack Developer</option>
+                      <option value="Frontend">Frontend Developer</option>
+                      <option value="Backend">Backend Developer</option>
+                      <option value="Database">Database Specialist</option>
+                      <option value="UI/UX Design">UI/UX Designer</option>
+                      <option value="DevOps">DevOps Engineer</option>
+                      <option value="Testing">QA/Testing</option>
+                      <option value="Full Stack">Full Stack Developer</option>
                     </select>
                     <p className="text-xs text-gray-600 mt-1">
                       This will be their default work type when assigned to tasks
@@ -870,9 +968,10 @@ const ProductPlanning = () => {
                 
                 <button
                   type="submit"
-                  className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition-colors font-medium"
+                  disabled={isSubmittingInvite}
+                  className="w-full bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition-colors font-medium disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Send Invitation
+                  {isSubmittingInvite ? 'Sending...' : 'Send Invitation'}
                 </button>
               </form>
             </div>
@@ -901,13 +1000,8 @@ const ProductPlanning = () => {
                           </span>
                           {member.role === 'Developer' && member.specialization && member.specialization !== 'None' && (
                             <span className="px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700">
-                              {member.specialization === 'Frontend' && '🎨 Frontend'}
-                              {member.specialization === 'Backend' && '⚙️ Backend'}
-                              {member.specialization === 'Database' && '🗄️ Database'}
-                              {member.specialization === 'UI/UX Design' && '✨ UI/UX Design'}
-                              {member.specialization === 'DevOps' && '🚀 DevOps'}
-                              {member.specialization === 'Testing' && '🧪 Testing'}
-                              {member.specialization === 'Full Stack' && '💻 Full Stack'}
+                              <WorkTypeIcon workType={member.specialization} />
+                              {member.specialization}
                             </span>
                           )}
                         </div>

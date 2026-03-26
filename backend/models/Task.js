@@ -61,4 +61,10 @@ const taskSchema = new mongoose.Schema({
   }
 });
 
+// Common read/query paths
+taskSchema.index({ sprint: 1, status: 1, createdAt: -1 });
+taskSchema.index({ sprint: 1, createdAt: -1 });
+taskSchema.index({ assignedTo: 1, status: 1, createdAt: -1 });
+taskSchema.index({ assignedTo: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Task', taskSchema);

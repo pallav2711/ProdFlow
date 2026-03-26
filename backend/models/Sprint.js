@@ -62,4 +62,9 @@ const sprintSchema = new mongoose.Schema({
   }
 });
 
+// Common read/query paths
+sprintSchema.index({ product: 1, createdAt: -1 });
+sprintSchema.index({ createdBy: 1, createdAt: -1 });
+sprintSchema.index({ status: 1, createdAt: -1 });
+
 module.exports = mongoose.model('Sprint', sprintSchema);

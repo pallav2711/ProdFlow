@@ -13,6 +13,7 @@ const {
   removeMember
 } = require('../controllers/team.controller');
 const { protect, authorize } = require('../middleware/auth');
+const asyncHandler = require('../middleware/asyncHandler');
 
 // All routes require authentication
 router.use(protect);
@@ -21,16 +22,16 @@ router.use(protect);
 router.post('/invite', authorize('Product Manager'), inviteUser);
 
 // Get my pending invitations
-router.get('/invitations', getMyInvitations);
+router.get('/invitations', asyncHandler(getMyInvitations));
 
 // Accept/Reject invitations
-router.put('/invitations/:id/accept', acceptInvitation);
-router.put('/invitations/:id/reject', rejectInvitation);
+router.put('/invitations/:id/accept', asyncHandler(acceptInvitation));
+router.put('/invitations/:id/reject', asyncHandler(rejectInvitation));
 
 // Get team members for a product
-router.get('/product/:productId', getProductTeam);
+router.get('/product/:productId', asyncHandler(getProductTeam));
 
 // Remove member (Product Manager only)
-router.delete('/:memberId', authorize('Product Manager'), removeMember);
+router.delete('/:memberId', authorize('Product Manager'), asyncHandler(removeMember));
 
 module.exports = router;

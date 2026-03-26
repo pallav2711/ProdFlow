@@ -1,9 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '../context/AuthContext'
 import api from '../api/config'
+import { useToast } from '../context/ToastContext'
+import PageHeader from '../components/PageHeader'
+import PageSkeleton from '../components/PageSkeleton'
+import { StatusIcon, WorkTypeIcon } from '../components/AppIcons'
 
 const SprintPlanner = () => {
   const { user } = useAuth()
+  const { showToast } = useToast()
   const [sprints, setSprints] = useState([])
   const [products, setProducts] = useState([])
   const [features, setFeatures] = useState([])
@@ -41,6 +46,35 @@ const SprintPlanner = () => {
     assignedTo: '',
     estimatedHours: 0
   })
+  const [sprintFormErrors, setSprintFormErrors] = useState({})
+  const [isSubmittingSprintCreate, setIsSubmittingSprintCreate] = useState(false)
+  const [isSubmittingSprintEdit, setIsSubmittingSprintEdit] = useState(false)
+
+  const validateSprintForm = () => {
+    const errors = {}
+    if (!sprintForm.name?.trim() || sprintForm.name.trim().length < 3) {
+      errors.name = 'Sprint name must be at least 3 characters.'
+    }
+    if (!sprintForm.product) {
+      errors.product = 'Please select a product.'
+    }
+    if (!sprintForm.duration || Number(sprintForm.duration) < 1 || Number(sprintForm.duration) > 30) {
+      errors.duration = 'Duration must be between 1 and 30 days.'
+    }
+    if (!sprintForm.teamSize || Number(sprintForm.teamSize) < 1 || Number(sprintForm.teamSize) > 20) {
+      errors.teamSize = 'Team size must be between 1 and 20.'
+    }
+    if (!sprintForm.startDate) {
+      errors.startDate = 'Start date is required.'
+    }
+    if (!sprintForm.endDate) {
+      errors.endDate = 'End date is required.'
+    }
+    if (sprintForm.startDate && sprintForm.endDate && new Date(sprintForm.endDate) < new Date(sprintForm.startDate)) {
+      errors.endDate = 'End date cannot be before start date.'
+    }
+    return errors
+  }
 
   // Fetch data when component mounts or user changes
   useEffect(() => {
@@ -189,6 +223,13 @@ const SprintPlanner = () => {
 
   const handleSprintSubmit = async (e) => {
     e.preventDefault()
+    const errors = validateSprintForm()
+    setSprintFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      showToast('Please fix highlighted sprint fields.', 'error')
+      return
+    }
+    setIsSubmittingSprintCreate(true)
     try {
       console.log('Submitting sprint form:', sprintForm);
       console.log('Features array:', sprintForm.features);
@@ -230,9 +271,11 @@ const SprintPlanner = () => {
       })
       setFeatureTasks({})
       fetchData()
-      alert('Sprint created successfully with task assignments!')
+      showToast('Sprint created successfully with task assignments!', 'success')
     } catch (error) {
-      alert(error.response?.data?.message || 'Error creating sprint')
+      showToast(error.response?.data?.message || 'Error creating sprint', 'error')
+    } finally {
+      setIsSubmittingSprintCreate(false)
     }
   }
 
@@ -258,9 +301,9 @@ const SprintPlanner = () => {
         estimatedHours: 0
       })
       selectSprint(selectedSprint) // Refresh sprint details
-      alert('Task added successfully!')
+      showToast('Task added successfully!', 'success')
     } catch (error) {
-      alert(error.response?.data?.message || 'Error adding task')
+      showToast(error.response?.data?.message || 'Error adding task', 'error')
     }
   }
 
@@ -273,9 +316,9 @@ const SprintPlanner = () => {
       await api.delete(`/sprints/${sprintId}`)
       setSelectedSprint(null)
       fetchData()
-      alert('Sprint deleted successfully!')
+      showToast('Sprint deleted successfully!', 'success')
     } catch (error) {
-      alert(error.response?.data?.message || 'Error deleting sprint')
+      showToast(error.response?.data?.message || 'Error deleting sprint', 'error')
     }
   }
 
@@ -295,6 +338,13 @@ const SprintPlanner = () => {
 
   const handleEditSprintSubmit = async (e) => {
     e.preventDefault()
+    const errors = validateSprintForm()
+    setSprintFormErrors(errors)
+    if (Object.keys(errors).length > 0) {
+      showToast('Please fix highlighted sprint fields.', 'error')
+      return
+    }
+    setIsSubmittingSprintEdit(true)
     try {
       await api.put(`/sprints/${sprintToEdit._id}`, {
         name: sprintForm.name,
@@ -303,7 +353,7 @@ const SprintPlanner = () => {
         endDate: sprintForm.endDate,
         teamSize: sprintForm.teamSize
       })
-      alert('Sprint updated successfully!')
+      showToast('Sprint updated successfully!', 'success')
       setShowEditSprintModal(false)
       setSprintToEdit(null)
       setSprintForm({
@@ -322,37 +372,30 @@ const SprintPlanner = () => {
         setSelectedSprint(res.data.sprint)
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Error updating sprint')
+      showToast(error.response?.data?.message || 'Error updating sprint', 'error')
+    } finally {
+      setIsSubmittingSprintEdit(false)
     }
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen">Loading...</div>
+    return <PageSkeleton variant="dense" cards={4} rows={5} />
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold">Sprint Planner</h1>
-        <div className="flex gap-3">
-          <button
-            onClick={() => fetchData()}
-            disabled={loading}
-            className="bg-gray-600 text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-gray-700 transition-all hover:shadow-lg hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
+      <PageHeader
+        title="Sprint Planner"
+        subtitle="Plan sprints, assign work, and track sprint outcomes."
+        rightContent={
           <button
             onClick={() => setShowSprintModal(true)}
             className="bg-accent text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5"
           >
             Create Sprint
           </button>
-        </div>
-      </div>
+        }
+      />
 
       {error && (
         <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
@@ -457,7 +500,7 @@ const SprintPlanner = () => {
                         ? 'bg-indigo-100 text-indigo-700'
                         : 'bg-blue-100 text-blue-700'
                     }`}>
-                      {sprint.status === 'Completed' ? '✅' : sprint.status === 'Active' ? '⚡' : '📋'} {sprint.status}
+                      <StatusIcon status={sprint.status} /> {sprint.status}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600">{sprint.duration} days</p>
@@ -489,8 +532,8 @@ const SprintPlanner = () => {
                       <h3 className="text-lg font-bold text-green-800">🎉 Sprint Completed!</h3>
                       <p className="text-sm text-green-700">All tasks have been completed and approved. Great work team!</p>
                     </div>
-                    <span className="px-4 py-2 bg-green-500 text-white rounded-lg font-bold text-sm">
-                      ✅ DONE
+                    <span className="px-4 py-2 bg-green-500 text-white rounded-lg font-bold text-sm inline-flex items-center">
+                      <StatusIcon status="Completed" variant="compact" /> DONE
                     </span>
                   </div>
                 </div>
@@ -507,7 +550,7 @@ const SprintPlanner = () => {
                         ? 'bg-indigo-100 text-indigo-700'
                         : 'bg-blue-100 text-blue-700'
                     }`}>
-                      {selectedSprint.status === 'Completed' ? '✅' : selectedSprint.status === 'Active' ? '⚡' : '📋'} {selectedSprint.status}
+                      <StatusIcon status={selectedSprint.status} /> {selectedSprint.status}
                     </span>
                   </div>
                   <div className="flex gap-2">
@@ -554,7 +597,7 @@ const SprintPlanner = () => {
               {/* AI Prediction */}
               {selectedSprint.aiPrediction?.successProbability && (
                 <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
-                  <h3 className="font-bold mb-2">🤖 AI Sprint Success Prediction</h3>
+                  <h3 className="font-bold mb-2">AI Sprint Success Prediction</h3>
                   <div className="flex items-center">
                     <div className="flex-1">
                       <div className="bg-gray-200 rounded-full h-4">
@@ -647,8 +690,11 @@ const SprintPlanner = () => {
                   onChange={(e) => setSprintForm({ ...sprintForm, name: e.target.value })}
                   placeholder="e.g., Sprint 1 - Core Features"
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
+                    sprintFormErrors.name ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
+                {sprintFormErrors.name && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.name}</p>}
               </div>
 
               {/* Product Selection */}
@@ -660,7 +706,9 @@ const SprintPlanner = () => {
                   value={sprintForm.product}
                   onChange={(e) => handleProductChange(e.target.value)}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none bg-white"
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all appearance-none bg-white ${
+                    sprintFormErrors.product ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 >
                   <option value="">Select a product</option>
                   {products.map((product) => (
@@ -669,6 +717,7 @@ const SprintPlanner = () => {
                     </option>
                   ))}
                 </select>
+                {sprintFormErrors.product && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.product}</p>}
               </div>
 
               {/* Duration and Team Size */}
@@ -684,8 +733,11 @@ const SprintPlanner = () => {
                     value={sprintForm.duration}
                     onChange={(e) => setSprintForm({ ...sprintForm, duration: parseInt(e.target.value) })}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
+                      sprintFormErrors.duration ? 'border-red-400' : 'border-gray-300'
+                    }`}
                   />
+                  {sprintFormErrors.duration && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.duration}</p>}
                   <p className="text-xs text-gray-500 mt-1">Typical: 7-14 days</p>
                 </div>
                 <div>
@@ -699,8 +751,11 @@ const SprintPlanner = () => {
                     value={sprintForm.teamSize}
                     onChange={(e) => setSprintForm({ ...sprintForm, teamSize: parseInt(e.target.value) })}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
+                      sprintFormErrors.teamSize ? 'border-red-400' : 'border-gray-300'
+                    }`}
                   />
+                  {sprintFormErrors.teamSize && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.teamSize}</p>}
                   <p className="text-xs text-gray-500 mt-1">Number of developers</p>
                 </div>
               </div>
@@ -716,8 +771,11 @@ const SprintPlanner = () => {
                     value={sprintForm.startDate}
                     onChange={(e) => setSprintForm({ ...sprintForm, startDate: e.target.value })}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
+                      sprintFormErrors.startDate ? 'border-red-400' : 'border-gray-300'
+                    }`}
                   />
+                  {sprintFormErrors.startDate && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.startDate}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -728,8 +786,11 @@ const SprintPlanner = () => {
                     value={sprintForm.endDate}
                     onChange={(e) => setSprintForm({ ...sprintForm, endDate: e.target.value })}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all ${
+                      sprintFormErrors.endDate ? 'border-red-400' : 'border-gray-300'
+                    }`}
                   />
+                  {sprintFormErrors.endDate && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.endDate}</p>}
                 </div>
               </div>
 
@@ -798,7 +859,7 @@ const SprintPlanner = () => {
                                   <div className="mt-3 pt-3 border-t border-gray-200">
                                     <div className="flex items-center justify-between mb-2">
                                       <label className="block text-xs font-semibold text-gray-700">
-                                        👥 Assign Team Members (Work type auto-assigned from specialization)
+                                        Assign Team Members (Work type auto-assigned from specialization)
                                       </label>
                                       <button
                                         type="button"
@@ -837,13 +898,7 @@ const SprintPlanner = () => {
                                                 {task.userId && task.workType && (
                                                   <div className="mt-2">
                                                     <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-indigo-100 text-indigo-700">
-                                                      {task.workType === 'Frontend' && '🎨'}
-                                                      {task.workType === 'Backend' && '⚙️'}
-                                                      {task.workType === 'Database' && '🗄️'}
-                                                      {task.workType === 'UI/UX Design' && '✨'}
-                                                      {task.workType === 'DevOps' && '🚀'}
-                                                      {task.workType === 'Testing' && '🧪'}
-                                                      {task.workType === 'Full Stack' && '💻'}
+                                                      <WorkTypeIcon workType={task.workType} />
                                                       {task.workType}
                                                     </span>
                                                   </div>
@@ -889,7 +944,7 @@ const SprintPlanner = () => {
                   {sprintForm.features.length > 0 && (
                     <div className="mt-3 p-3 bg-indigo-50 rounded-lg border border-indigo-200">
                       <p className="text-sm text-indigo-900 font-medium">
-                        📋 {sprintForm.features.length} feature{sprintForm.features.length !== 1 ? 's' : ''} selected
+                        {sprintForm.features.length} feature{sprintForm.features.length !== 1 ? 's' : ''} selected
                       </p>
                       <p className="text-xs text-indigo-700 mt-1">
                         {Object.values(featureTasks).flat().filter(t => t.userId && t.workType).length} tasks assigned to team members
@@ -903,12 +958,13 @@ const SprintPlanner = () => {
               <div className="flex gap-3 pt-4">
                 <button
                   type="submit"
-                  className="flex-1 bg-accent text-white py-3 px-6 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2"
+                  disabled={isSubmittingSprintCreate}
+                  className="flex-1 bg-accent text-white py-3 px-6 rounded-xl font-semibold hover:bg-gray-800 transition-all hover:shadow-lg hover:-translate-y-0.5 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                   </svg>
-                  Create Sprint with AI Prediction
+                  {isSubmittingSprintCreate ? 'Creating Sprint...' : 'Create Sprint with AI Prediction'}
                 </button>
                 <button
                   type="button"
@@ -966,9 +1022,12 @@ const SprintPlanner = () => {
                   value={sprintForm.name}
                   onChange={(e) => setSprintForm({ ...sprintForm, name: e.target.value })}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    sprintFormErrors.name ? 'border-red-400' : 'border-gray-300'
+                  }`}
                   placeholder="e.g., Sprint 1 - Core Features"
                 />
+                {sprintFormErrors.name && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.name}</p>}
               </div>
 
               {/* Duration */}
@@ -982,8 +1041,11 @@ const SprintPlanner = () => {
                   value={sprintForm.duration}
                   onChange={(e) => setSprintForm({ ...sprintForm, duration: parseInt(e.target.value) })}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    sprintFormErrors.duration ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
+                {sprintFormErrors.duration && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.duration}</p>}
               </div>
 
               {/* Date Range */}
@@ -997,8 +1059,11 @@ const SprintPlanner = () => {
                     value={sprintForm.startDate}
                     onChange={(e) => setSprintForm({ ...sprintForm, startDate: e.target.value })}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      sprintFormErrors.startDate ? 'border-red-400' : 'border-gray-300'
+                    }`}
                   />
+                  {sprintFormErrors.startDate && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.startDate}</p>}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -1009,8 +1074,11 @@ const SprintPlanner = () => {
                     value={sprintForm.endDate}
                     onChange={(e) => setSprintForm({ ...sprintForm, endDate: e.target.value })}
                     required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                      sprintFormErrors.endDate ? 'border-red-400' : 'border-gray-300'
+                    }`}
                   />
+                  {sprintFormErrors.endDate && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.endDate}</p>}
                 </div>
               </div>
 
@@ -1025,17 +1093,21 @@ const SprintPlanner = () => {
                   value={sprintForm.teamSize}
                   onChange={(e) => setSprintForm({ ...sprintForm, teamSize: parseInt(e.target.value) })}
                   required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${
+                    sprintFormErrors.teamSize ? 'border-red-400' : 'border-gray-300'
+                  }`}
                 />
+                {sprintFormErrors.teamSize && <p className="text-xs text-red-600 mt-1">{sprintFormErrors.teamSize}</p>}
               </div>
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t border-gray-200">
                 <button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-lg hover:shadow-xl"
+                  disabled={isSubmittingSprintEdit}
+                  className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all font-semibold shadow-lg hover:shadow-xl disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  Update Sprint
+                  {isSubmittingSprintEdit ? 'Updating Sprint...' : 'Update Sprint'}
                 </button>
                 <button
                   type="button"

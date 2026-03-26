@@ -6,11 +6,13 @@
 const Product = require('../models/Product');
 const Feature = require('../models/Feature');
 const ProjectMember = require('../models/ProjectMember');
+const { forbiddenError, notFoundError } = require('../utils/errorFactory');
+const { parsePagination } = require('../utils/pagination');
 
 // @desc    Create new product
 // @route   POST /api/products
 // @access  Private (Product Manager only)
-exports.createProduct = async (req, res) => {
+exports.createProduct = async (req, res, next) => {
   try {
     const { name, vision, description } = req.body;
 
@@ -37,49 +39,61 @@ exports.createProduct = async (req, res) => {
       product
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Get all products user has access to
 // @route   GET /api/products
 // @access  Private
-exports.getProducts = async (req, res) => {
+exports.getProducts = async (req, res, next) => {
   try {
+    const pagination = parsePagination(req.query);
+
     // Find all products where user is an active member
     const memberships = await ProjectMember.find({
       user: req.user.id,
       status: 'active'
-    }).select('product');
+    }).select('product').lean();
 
     const productIds = memberships.map(m => m.product);
 
-    const products = await Product.find({
+    const filter = {
       _id: { $in: productIds }
-    })
+    };
+
+    let productQuery = Product.find(filter)
+      .select('name vision description createdBy isPrivate createdAt')
       .populate('createdBy', 'name email')
       .sort('-createdAt');
+
+    if (pagination) {
+      productQuery = productQuery.skip(pagination.skip).limit(pagination.limit);
+    }
+
+    const products = await productQuery.lean();
+    const totalCount = pagination ? await Product.countDocuments(filter) : products.length;
 
     res.status(200).json({
       success: true,
       count: products.length,
+      ...(pagination ? {
+        totalCount,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit) || 1
+      } : {}),
       products
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Get single product
 // @route   GET /api/products/:id
 // @access  Private
-exports.getProduct = async (req, res) => {
+exports.getProduct = async (req, res, next) => {
   try {
     // Check if user has access to this product
     const membership = await ProjectMember.findOne({
@@ -89,20 +103,16 @@ exports.getProduct = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have access to this product'
-      });
+      return next(forbiddenError('You do not have access to this product', 'PRODUCT_ACCESS_FORBIDDEN'));
     }
 
     const product = await Product.findById(req.params.id)
-      .populate('createdBy', 'name email');
+      .select('name vision description createdBy isPrivate createdAt')
+      .populate('createdBy', 'name email')
+      .lean();
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+      return next(notFoundError('Product not found', 'PRODUCT_NOT_FOUND'));
     }
 
     res.status(200).json({
@@ -110,17 +120,14 @@ exports.getProduct = async (req, res) => {
       product
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Add feature to product
 // @route   POST /api/products/:id/features
 // @access  Private (Product Manager only)
-exports.addFeature = async (req, res) => {
+exports.addFeature = async (req, res, next) => {
   try {
     // Check if user has Product Manager access to this product
     const membership = await ProjectMember.findOne({
@@ -131,19 +138,13 @@ exports.addFeature = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only Product Managers can add features'
-      });
+      return next(forbiddenError('Only Product Managers can add features', 'FEATURE_CREATE_FORBIDDEN'));
     }
 
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+      return next(notFoundError('Product not found', 'PRODUCT_NOT_FOUND'));
     }
 
     const { name, description, priority, businessValue, estimatedEffort } = req.body;
@@ -162,68 +163,71 @@ exports.addFeature = async (req, res) => {
       feature
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Get features for a product
 // @route   GET /api/products/:id/features
 // @access  Private
-exports.getFeatures = async (req, res) => {
+exports.getFeatures = async (req, res, next) => {
   try {
+    const pagination = parsePagination(req.query);
+
     // Check if user has access to this product
     const membership = await ProjectMember.findOne({
       product: req.params.id,
       user: req.user.id,
       status: 'active'
-    });
+    }).select('_id').lean();
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have access to this product'
-      });
+      return next(forbiddenError('You do not have access to this product', 'PRODUCT_ACCESS_FORBIDDEN'));
     }
 
-    const features = await Feature.find({ product: req.params.id })
+    const filter = { product: req.params.id };
+
+    let featureQuery = Feature.find(filter)
+      .select('product name description priority businessValue estimatedEffort status createdAt')
       .sort('-createdAt');
+
+    if (pagination) {
+      featureQuery = featureQuery.skip(pagination.skip).limit(pagination.limit);
+    }
+
+    const features = await featureQuery.lean();
+    const totalCount = pagination ? await Feature.countDocuments(filter) : features.length;
 
     res.status(200).json({
       success: true,
       count: features.length,
+      ...(pagination ? {
+        totalCount,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit) || 1
+      } : {}),
       features
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Update product
 // @route   PUT /api/products/:id
 // @access  Private (Product Manager only)
-exports.updateProduct = async (req, res) => {
+exports.updateProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+      return next(notFoundError('Product not found', 'PRODUCT_NOT_FOUND'));
     }
 
     // Check if user is the creator
     if (product.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only product creator can update the product'
-      });
+      return next(forbiddenError('Only product creator can update the product', 'PRODUCT_UPDATE_FORBIDDEN'));
     }
 
     const { name, vision, description } = req.body;
@@ -239,33 +243,24 @@ exports.updateProduct = async (req, res) => {
       product
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Delete product
 // @route   DELETE /api/products/:id
 // @access  Private (Product Manager only)
-exports.deleteProduct = async (req, res) => {
+exports.deleteProduct = async (req, res, next) => {
   try {
     const product = await Product.findById(req.params.id);
 
     if (!product) {
-      return res.status(404).json({
-        success: false,
-        message: 'Product not found'
-      });
+      return next(notFoundError('Product not found', 'PRODUCT_NOT_FOUND'));
     }
 
     // Check if user is the creator
     if (product.createdBy.toString() !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only product creator can delete the product'
-      });
+      return next(forbiddenError('Only product creator can delete the product', 'PRODUCT_DELETE_FORBIDDEN'));
     }
 
     // Delete all features
@@ -282,25 +277,19 @@ exports.deleteProduct = async (req, res) => {
       message: 'Product and all associated data deleted successfully'
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Update feature
 // @route   PUT /api/products/features/:id
 // @access  Private (Product Manager only)
-exports.updateFeature = async (req, res) => {
+exports.updateFeature = async (req, res, next) => {
   try {
     const feature = await Feature.findById(req.params.id);
 
     if (!feature) {
-      return res.status(404).json({
-        success: false,
-        message: 'Feature not found'
-      });
+      return next(notFoundError('Feature not found', 'FEATURE_NOT_FOUND'));
     }
 
     // Check if user has Product Manager access
@@ -312,10 +301,7 @@ exports.updateFeature = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only Product Managers can update features'
-      });
+      return next(forbiddenError('Only Product Managers can update features', 'FEATURE_UPDATE_FORBIDDEN'));
     }
 
     const { name, description, priority, businessValue, estimatedEffort } = req.body;
@@ -333,25 +319,19 @@ exports.updateFeature = async (req, res) => {
       feature
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Delete feature
 // @route   DELETE /api/products/features/:id
 // @access  Private (Product Manager only)
-exports.deleteFeature = async (req, res) => {
+exports.deleteFeature = async (req, res, next) => {
   try {
     const feature = await Feature.findById(req.params.id);
 
     if (!feature) {
-      return res.status(404).json({
-        success: false,
-        message: 'Feature not found'
-      });
+      return next(notFoundError('Feature not found', 'FEATURE_NOT_FOUND'));
     }
 
     // Check if user has Product Manager access
@@ -363,10 +343,7 @@ exports.deleteFeature = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'Only Product Managers can delete features'
-      });
+      return next(forbiddenError('Only Product Managers can delete features', 'FEATURE_DELETE_FORBIDDEN'));
     }
 
     await feature.deleteOne();
@@ -376,9 +353,6 @@ exports.deleteFeature = async (req, res) => {
       message: 'Feature deleted successfully'
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };

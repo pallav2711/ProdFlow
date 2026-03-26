@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDashboard } from '../context/DashboardContext'
+import { useToast } from '../context/ToastContext'
+import PageHeader from '../components/PageHeader'
+import PaginationControls from '../components/PaginationControls'
+import { StatusIcon, WorkTypeIcon } from '../components/AppIcons'
 
 const Dashboard = () => {
   const { user } = useAuth()
@@ -17,30 +22,42 @@ const Dashboard = () => {
     rejectTask,
     isDataStale
   } = useDashboard()
+  const { showToast } = useToast()
   
   const [activeTab, setActiveTab] = useState('myTasks') // 'myTasks' or 'allTasks'
   const [filterStatus, setFilterStatus] = useState('all') // 'all', 'To Do', 'In Progress', 'Completed', 'Blocked'
+  const [sprintPage, setSprintPage] = useState(1)
+  const [rejectModalTaskId, setRejectModalTaskId] = useState(null)
+  const [reviewNotesInput, setReviewNotesInput] = useState('')
+  const SPRINTS_PAGE_SIZE = 15
+
+  const refreshDashboard = (force = true) =>
+    fetchDashboardData(force, {
+      pagination: {
+        sprints: { page: sprintPage, limit: SPRINTS_PAGE_SIZE }
+      }
+    })
 
   // Fetch data when component mounts or when data is stale
   useEffect(() => {
     if (user) {
       console.log('Dashboard mounted, fetching data...')
       // Always fetch fresh data when navigating to dashboard
-      fetchDashboardData(true)
+      refreshDashboard(true)
     }
-  }, [user])
+  }, [user, sprintPage])
 
   const handleStatusChange = async (taskId, newStatus) => {
     try {
       const response = await updateTaskStatus(taskId, newStatus)
       
       if (response.sprintCompleted) {
-        alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')
+        showToast('Task updated! All tasks completed - Sprint marked as Completed!', 'success')
       } else {
-        alert('Task status updated successfully!')
+        showToast('Task status updated successfully!', 'success')
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Error updating task status')
+      showToast(error.response?.data?.message || 'Error updating task status', 'error')
     }
   }
 
@@ -49,24 +66,29 @@ const Dashboard = () => {
       const response = await approveTask(taskId)
       
       if (response.sprintCompleted) {
-        alert('Task approved! 🎉 All tasks completed - Sprint marked as Completed!')
+        showToast('Task approved! All tasks completed - Sprint marked as Completed!', 'success')
       } else {
-        alert('Task approved successfully!')
+        showToast('Task approved successfully!', 'success')
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Error approving task')
+      showToast(error.response?.data?.message || 'Error approving task', 'error')
     }
   }
 
-  const handleRejectTask = async (taskId) => {
-    const reviewNotes = prompt('Please provide feedback for the developer:')
-    if (!reviewNotes) return
-
+  const handleRejectTask = async () => {
+    if (!rejectModalTaskId) return
+    const reviewNotes = reviewNotesInput.trim()
+    if (!reviewNotes) {
+      showToast('Please provide feedback before rejecting.', 'error')
+      return
+    }
     try {
-      await rejectTask(taskId, reviewNotes)
-      alert('Task sent back for revision')
+      await rejectTask(rejectModalTaskId, reviewNotes)
+      setRejectModalTaskId(null)
+      setReviewNotesInput('')
+      showToast('Task sent back for revision.', 'success')
     } catch (error) {
-      alert(error.response?.data?.message || 'Error rejecting task')
+      showToast(error.response?.data?.message || 'Error rejecting task', 'error')
     }
   }
 
@@ -87,43 +109,8 @@ const Dashboard = () => {
     }
   }
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'To Do':
-        return '📋'
-      case 'In Progress':
-        return '⚡'
-      case 'Pending Review':
-        return '👀'
-      case 'Completed':
-        return '✅'
-      case 'Blocked':
-        return '🚫'
-      default:
-        return '📋'
-    }
-  }
-
-  const getWorkTypeIcon = (workType) => {
-    switch (workType) {
-      case 'Frontend':
-        return '🎨'
-      case 'Backend':
-        return '⚙️'
-      case 'Database':
-        return '🗄️'
-      case 'UI/UX Design':
-        return '✨'
-      case 'DevOps':
-        return '🚀'
-      case 'Testing':
-        return '🧪'
-      case 'Full Stack':
-        return '💻'
-      default:
-        return '💼'
-    }
-  }
+  const getStatusIcon = (status) => <StatusIcon status={status} />
+  const getWorkTypeIcon = (workType) => <WorkTypeIcon workType={workType} />
 
   const getWorkTypeColor = (workType) => {
     switch (workType) {
@@ -164,50 +151,26 @@ const Dashboard = () => {
     }
   }
 
-  const getSprintStatusIcon = (status) => {
-    switch (status) {
-      case 'Planning':
-        return '📋'
-      case 'Active':
-        return '⚡'
-      case 'Completed':
-        return '✅'
-      default:
-        return '📋'
-    }
-  }
+  const getSprintStatusIcon = (status) => <StatusIcon status={status} />
 
   // Team Lead Dashboard - Show Sprint Overview (No Personal Tasks)
   if (user.role === 'Team Lead') {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pt-20 sm:pt-24">
-        {/* Header */}
-        <div className="mb-6 sm:mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-              <p className="text-gray-600 mt-1 text-sm sm:text-base">Team Lead Dashboard - Sprint Overview</p>
-            </div>
-            <div className="mt-4 sm:mt-0 flex items-center gap-3">
-              {isDataStale && (
-                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                  Data may be outdated
-                </span>
-              )}
-              <button
-                onClick={() => fetchDashboardData(true)}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-              >
-                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                {loading ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
-          </div>
+        <PageHeader
+          title={`Welcome back, ${user.name}!`}
+          subtitle="Team Lead Dashboard - Sprint Overview"
+          className="mb-6 sm:mb-8"
+          rightContent={
+            isDataStale ? (
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                Data may be outdated
+              </span>
+            ) : null
+          }
+        />
           {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 sm:mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -216,14 +179,13 @@ const Dashboard = () => {
               </div>
               <p className="text-red-600 text-sm mt-1">{error}</p>
               <button
-                onClick={() => fetchDashboardData(true)}
+                onClick={() => refreshDashboard(true)}
                 className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium underline"
               >
                 Try again
               </button>
             </div>
           )}
-        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -304,6 +266,14 @@ const Dashboard = () => {
                 </svg>
                 <p className="text-gray-600 font-medium">No sprints yet</p>
                 <p className="text-gray-500 text-sm mt-1">Create your first sprint in Sprint Planner</p>
+                {user.role === 'Team Lead' && (
+                  <Link
+                    to="/sprint-planner"
+                    className="inline-flex mt-4 px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-gray-800 transition-colors"
+                  >
+                    Go to Sprint Planner
+                  </Link>
+                )}
               </div>
             ) : (
               <div className="space-y-6">
@@ -311,6 +281,18 @@ const Dashboard = () => {
                   <SprintCard key={sprint._id} sprint={sprint} />
                 ))}
               </div>
+            )}
+
+            {stats.sprints > sprints.length && (
+              <PaginationControls
+                currentPage={sprintPage}
+                totalPages={Math.max(sprintPage + (sprints.length < SPRINTS_PAGE_SIZE ? 0 : 1), 1)}
+                label="Sprint page"
+                onPrevious={() => setSprintPage((prev) => Math.max(prev - 1, 1))}
+                onNext={() => setSprintPage((prev) => prev + 1)}
+                canPrevious={!loading && sprintPage > 1}
+                canNext={!loading && sprints.length >= SPRINTS_PAGE_SIZE}
+              />
             )}
           </div>
         </div>
@@ -322,33 +304,19 @@ const Dashboard = () => {
   if (user.role === 'Product Manager') {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-              <p className="text-gray-600 mt-1">Product Manager Dashboard - Sprint Overview</p>
-            </div>
-            <div className="mt-4 sm:mt-0 flex items-center gap-3">
-              {isDataStale && (
-                <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                  Data may be outdated
-                </span>
-              )}
-              <button
-                onClick={() => fetchDashboardData(true)}
-                disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-              >
-                <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                {loading ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
-          </div>
+        <PageHeader
+          title={`Welcome back, ${user.name}!`}
+          subtitle="Product Manager Dashboard - Sprint Overview"
+          rightContent={
+            isDataStale ? (
+              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+                Data may be outdated
+              </span>
+            ) : null
+          }
+        />
           {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -357,14 +325,13 @@ const Dashboard = () => {
               </div>
               <p className="text-red-600 text-sm mt-1">{error}</p>
               <button
-                onClick={() => fetchDashboardData(true)}
+                onClick={() => refreshDashboard(true)}
                 className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium underline"
               >
                 Try again
               </button>
             </div>
           )}
-        </div>
 
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -453,6 +420,18 @@ const Dashboard = () => {
                 ))}
               </div>
             )}
+
+            {stats.sprints > sprints.length && (
+              <PaginationControls
+                currentPage={sprintPage}
+                totalPages={Math.max(sprintPage + (sprints.length < SPRINTS_PAGE_SIZE ? 0 : 1), 1)}
+                label="Sprint page"
+                onPrevious={() => setSprintPage((prev) => Math.max(prev - 1, 1))}
+                onNext={() => setSprintPage((prev) => prev + 1)}
+                canPrevious={!loading && sprintPage > 1}
+                canNext={!loading && sprints.length >= SPRINTS_PAGE_SIZE}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -480,7 +459,7 @@ const Dashboard = () => {
         setExpanded(true)
       } catch (error) {
         console.error('Error fetching sprint details:', error)
-        alert('Error loading sprint details')
+        showToast('Error loading sprint details', 'error')
       } finally {
         setLoading(false)
       }
@@ -514,7 +493,7 @@ const Dashboard = () => {
                 </span>
                 {sprint.aiPrediction?.successProbability && (
                   <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                    🤖 AI: {sprint.aiPrediction.successProbability}% success
+                    AI: {sprint.aiPrediction.successProbability}% success
                   </span>
                 )}
               </div>
@@ -652,33 +631,20 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pt-20 sm:pt-24">
-      {/* Header */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Welcome back, {user.name}!</h1>
-            <p className="text-gray-600 mt-1 text-sm sm:text-base">Here's what's happening with your projects</p>
-          </div>
-          <div className="mt-4 sm:mt-0 flex items-center gap-3">
-            {isDataStale && (
-              <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
-                Data may be outdated
-              </span>
-            )}
-            <button
-              onClick={() => fetchDashboardData(true)}
-              disabled={loading}
-              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-            >
-              <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              {loading ? 'Refreshing...' : 'Refresh'}
-            </button>
-          </div>
-        </div>
+      <PageHeader
+        title={`Welcome back, ${user.name}!`}
+        subtitle="Here's what's happening with your projects"
+        className="mb-6 sm:mb-8"
+        rightContent={
+          isDataStale ? (
+            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
+              Data may be outdated
+            </span>
+          ) : null
+        }
+      />
         {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-6 sm:mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -687,14 +653,13 @@ const Dashboard = () => {
             </div>
             <p className="text-red-600 text-sm mt-1">{error}</p>
             <button
-              onClick={() => fetchDashboardData(true)}
+              onClick={() => refreshDashboard(true)}
               className="mt-2 text-red-600 hover:text-red-700 text-sm font-medium underline"
             >
               Try again
             </button>
           </div>
         )}
-      </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
@@ -746,7 +711,7 @@ const Dashboard = () => {
             <div>
               <h3 className="text-gray-600 text-xs sm:text-sm font-medium mb-1">Completed Sprints</h3>
               <p className="text-2xl sm:text-3xl font-bold text-emerald-600">{stats.completedSprints}</p>
-              <p className="text-xs text-gray-500 mt-1">✅ All tasks done</p>
+              <p className="text-xs text-gray-500 mt-1">All tasks done</p>
             </div>
             <div className="bg-emerald-100 p-2 sm:p-3 rounded-lg">
               <svg className="w-5 sm:w-6 h-5 sm:h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -808,7 +773,7 @@ const Dashboard = () => {
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                 }`}
               >
-                📋 To Do
+                To Do
               </button>
               <button
                 onClick={() => setFilterStatus('In Progress')}
@@ -818,7 +783,7 @@ const Dashboard = () => {
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                 }`}
               >
-                ⚡ In Progress
+                In Progress
               </button>
               <button
                 onClick={() => setFilterStatus('Completed')}
@@ -828,7 +793,7 @@ const Dashboard = () => {
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                 }`}
               >
-                ✅ Completed
+                Completed
               </button>
               <button
                 onClick={() => setFilterStatus('Blocked')}
@@ -838,7 +803,7 @@ const Dashboard = () => {
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
                 }`}
               >
-                🚫 Blocked
+                Blocked
               </button>
             </div>
           </div>
@@ -906,10 +871,10 @@ const Dashboard = () => {
                               onChange={(e) => handleStatusChange(task._id, e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent touch-target"
                             >
-                              <option value="To Do">📋 To Do</option>
-                              <option value="In Progress">⚡ In Progress</option>
-                              <option value="Pending Review">👀 Submit for Review</option>
-                              <option value="Blocked">🚫 Blocked</option>
+                              <option value="To Do">To Do</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Pending Review">Submit for Review</option>
+                              <option value="Blocked">Blocked</option>
                             </select>
                             <p className="text-xs text-gray-500">Submit for review when done</p>
                           </div>
@@ -921,11 +886,11 @@ const Dashboard = () => {
                               onChange={(e) => handleStatusChange(task._id, e.target.value)}
                               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent touch-target"
                             >
-                              <option value="To Do">📋 To Do</option>
-                              <option value="In Progress">⚡ In Progress</option>
-                              <option value="Pending Review">👀 Pending Review</option>
-                              <option value="Completed">✅ Completed</option>
-                              <option value="Blocked">🚫 Blocked</option>
+                              <option value="To Do">To Do</option>
+                              <option value="In Progress">In Progress</option>
+                              <option value="Pending Review">Pending Review</option>
+                              <option value="Completed">Completed</option>
+                              <option value="Blocked">Blocked</option>
                             </select>
                           </div>
                         )}
@@ -1006,7 +971,10 @@ const Dashboard = () => {
                               Approve
                             </button>
                             <button
-                              onClick={() => handleRejectTask(task._id)}
+                              onClick={() => {
+                                setRejectModalTaskId(task._id)
+                                setReviewNotesInput('')
+                              }}
                               className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-1"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1052,6 +1020,39 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {rejectModalTaskId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5">
+            <h3 className="text-lg font-bold text-gray-900">Reject Task</h3>
+            <p className="text-sm text-gray-600 mt-1">Provide feedback for the developer.</p>
+            <textarea
+              value={reviewNotesInput}
+              onChange={(e) => setReviewNotesInput(e.target.value)}
+              rows={4}
+              className="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Add clear feedback..."
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setRejectModalTaskId(null)
+                  setReviewNotesInput('')
+                }}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectTask}
+                className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700"
+              >
+                Reject Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

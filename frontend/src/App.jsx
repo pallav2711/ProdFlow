@@ -6,6 +6,7 @@ import PrivateRoute from './components/PrivateRoute'
 import Navbar from './components/Navbar'
 import ErrorBoundary from './components/ErrorBoundary'
 import { preloadCriticalData } from './api/config'
+import { ToastProvider } from './context/ToastContext'
 
 // Lazy load components for better performance
 const Landing = lazy(() => import('./pages/Landing'))
@@ -110,9 +111,11 @@ function App() {
           }}
         >
           <DashboardProvider>
-            <Suspense fallback={<LoadingSpinner />}>
-              <AppContent />
-            </Suspense>
+            <ToastProvider>
+              <Suspense fallback={<LoadingSpinner />}>
+                <AppContent />
+              </Suspense>
+            </ToastProvider>
           </DashboardProvider>
         </Router>
       </AuthProvider>

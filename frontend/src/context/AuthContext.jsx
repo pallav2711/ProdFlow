@@ -1,5 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react'
 import api from '../api/config'
+import { getApiErrorMessage } from '../utils/apiError'
 
 const AuthContext = createContext()
 
@@ -204,7 +205,7 @@ export const AuthProvider = ({ children }) => {
       
       return res.data
     } catch (error) {
-      console.error('Login error:', error.response?.data || error.message)
+      console.error('Login error:', getApiErrorMessage(error, 'Login failed'))
       throw error
     }
   }
@@ -228,7 +229,7 @@ export const AuthProvider = ({ children }) => {
       // Call backend logout to invalidate refresh token
       await api.post('/auth/logout')
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error('Logout error:', getApiErrorMessage(error, 'Logout failed'))
     } finally {
       clearTokens()
     }

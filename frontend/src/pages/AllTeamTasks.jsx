@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDashboard } from '../context/DashboardContext'
+import { useToast } from '../context/ToastContext'
+import PageHeader from '../components/PageHeader'
+import PaginationControls from '../components/PaginationControls'
+import PageSkeleton from '../components/PageSkeleton'
+import { StatusIcon, WorkTypeIcon } from '../components/AppIcons'
 
 const AllTeamTasks = () => {
   const { user } = useAuth()
   const { 
     allTasks, 
+    pagination,
     loading, 
     error, 
     fetchDashboardData, 
@@ -14,41 +21,55 @@ const AllTeamTasks = () => {
     updateTaskStatus,
     isDataStale 
   } = useDashboard()
+  const { showToast } = useToast()
   
   const [filterStatus, setFilterStatus] = useState('all')
+  const [sprintPage, setSprintPage] = useState(1)
+  const [rejectModalTaskId, setRejectModalTaskId] = useState(null)
+  const [reviewNotesInput, setReviewNotesInput] = useState('')
+  const SPRINTS_PAGE_SIZE = 15
 
   // Fetch data when component mounts
   useEffect(() => {
     if (user) {
       console.log('AllTeamTasks mounted, fetching data...')
       // Always fetch fresh data when navigating to all team tasks
-      fetchDashboardData(true)
+      fetchDashboardData(true, {
+        pagination: {
+          sprints: { page: sprintPage, limit: SPRINTS_PAGE_SIZE }
+        }
+      })
     }
-  }, [user])
+  }, [user, sprintPage])
 
   const handleApproveTask = async (taskId) => {
     try {
       const response = await approveTask(taskId)
       
       if (response.sprintCompleted) {
-        alert('Task approved! 🎉 All tasks completed - Sprint marked as Completed!')
+        showToast('Task approved! All tasks completed - Sprint marked as Completed!', 'success')
       } else {
-        alert('Task approved successfully!')
+        showToast('Task approved successfully!', 'success')
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Error approving task')
+      showToast(error.response?.data?.message || 'Error approving task', 'error')
     }
   }
 
-  const handleRejectTask = async (taskId) => {
-    const reviewNotes = prompt('Please provide feedback for the developer:')
-    if (!reviewNotes) return
-
+  const handleRejectTask = async () => {
+    if (!rejectModalTaskId) return
+    const reviewNotes = reviewNotesInput.trim()
+    if (!reviewNotes) {
+      showToast('Please provide feedback before rejecting.', 'error')
+      return
+    }
     try {
-      await rejectTask(taskId, reviewNotes)
-      alert('Task sent back for revision')
+      await rejectTask(rejectModalTaskId, reviewNotes)
+      setRejectModalTaskId(null)
+      setReviewNotesInput('')
+      showToast('Task sent back for revision.', 'success')
     } catch (error) {
-      alert(error.response?.data?.message || 'Error rejecting task')
+      showToast(error.response?.data?.message || 'Error rejecting task', 'error')
     }
   }
 
@@ -57,12 +78,12 @@ const AllTeamTasks = () => {
       const response = await updateTaskStatus(taskId, newStatus)
       
       if (response.sprintCompleted) {
-        alert('Task updated! 🎉 All tasks completed - Sprint marked as Completed!')
+        showToast('Task updated! All tasks completed - Sprint marked as Completed!', 'success')
       } else {
-        alert('Task status updated successfully!')
+        showToast('Task status updated successfully!', 'success')
       }
     } catch (error) {
-      alert(error.response?.data?.message || 'Error updating task status')
+      showToast(error.response?.data?.message || 'Error updating task status', 'error')
     }
   }
 
@@ -83,43 +104,9 @@ const AllTeamTasks = () => {
     }
   }
 
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'To Do':
-        return '📋'
-      case 'In Progress':
-        return '⚡'
-      case 'Pending Review':
-        return '👀'
-      case 'Completed':
-        return '✅'
-      case 'Blocked':
-        return '🚫'
-      default:
-        return '📋'
-    }
-  }
+  const getStatusIcon = (status) => <StatusIcon status={status} />
 
-  const getWorkTypeIcon = (workType) => {
-    switch (workType) {
-      case 'Frontend':
-        return '🎨'
-      case 'Backend':
-        return '⚙️'
-      case 'Database':
-        return '🗄️'
-      case 'UI/UX Design':
-        return '✨'
-      case 'DevOps':
-        return '�'
-      case 'Testing':
-        return '🧪'
-      case 'Full Stack':
-        return '�'
-      default:
-        return '�'
-    }
-  }
+  const getWorkTypeIcon = (workType) => <WorkTypeIcon workType={workType} />
 
   const getWorkTypeColor = (workType) => {
     switch (workType) {
@@ -157,42 +144,27 @@ const AllTeamTasks = () => {
   }
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading team tasks...</p>
-        </div>
-      </div>
-    )
+    return <PageSkeleton variant="table" cards={6} rows={7} />
   }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">All Team Tasks</h1>
-            <p className="text-gray-600 mt-1">Monitor and manage all tasks across all sprints</p>
-          </div>
-          <button
-            onClick={() => fetchDashboardData(true)}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
-          >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {loading ? 'Refreshing...' : 'Refresh'}
-          </button>
+      <PageHeader
+        title="All Team Tasks"
+        subtitle="Monitor and manage all tasks across all sprints."
+        meta={
+          pagination?.sprints ? (
+            <p className="text-xs text-gray-500">
+              Loaded from sprint page {pagination.sprints.page} of {pagination.sprints.totalPages}
+            </p>
+          ) : null
+        }
+      />
+      {error && (
+        <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-700 text-sm">{error}</p>
         </div>
-        {error && (
-          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-700 text-sm">{error}</p>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid md:grid-cols-6 gap-4 mb-8">
@@ -246,7 +218,7 @@ const AllTeamTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              📋 To Do ({stats.todo})
+              To Do ({stats.todo})
             </button>
             <button
               onClick={() => setFilterStatus('In Progress')}
@@ -256,7 +228,7 @@ const AllTeamTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              ⚡ In Progress ({stats.inProgress})
+              In Progress ({stats.inProgress})
             </button>
             <button
               onClick={() => setFilterStatus('Pending Review')}
@@ -266,7 +238,7 @@ const AllTeamTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              👀 Review ({stats.pendingReview})
+              Review ({stats.pendingReview})
             </button>
             <button
               onClick={() => setFilterStatus('Completed')}
@@ -276,7 +248,7 @@ const AllTeamTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              ✅ Completed ({stats.completed})
+              Completed ({stats.completed})
             </button>
             <button
               onClick={() => setFilterStatus('Blocked')}
@@ -286,7 +258,7 @@ const AllTeamTasks = () => {
                   : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
               }`}
             >
-              🚫 Blocked ({stats.blocked})
+              Blocked ({stats.blocked})
             </button>
           </div>
         </div>
@@ -304,6 +276,14 @@ const AllTeamTasks = () => {
                   ? 'Tasks will appear here when sprints are created' 
                   : `No tasks with status "${filterStatus}"`}
               </p>
+              {filterStatus === 'all' && (
+                <Link
+                  to="/sprint-planner"
+                  className="inline-flex mt-4 px-4 py-2 text-sm font-medium rounded-lg bg-accent text-white hover:bg-gray-800 transition-colors"
+                >
+                  Go to Sprint Planner
+                </Link>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -346,7 +326,7 @@ const AllTeamTasks = () => {
                       </div>
                       {task.reviewNotes && (
                         <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                          <p className="font-semibold text-yellow-800 mb-1">📝 Review Notes:</p>
+                          <p className="font-semibold text-yellow-800 mb-1">Review Notes:</p>
                           <p className="text-yellow-700">{task.reviewNotes}</p>
                           {task.reviewedBy && (
                             <p className="text-yellow-600 mt-1 text-xs">— {task.reviewedBy.name}</p>
@@ -367,7 +347,10 @@ const AllTeamTasks = () => {
                             Approve
                           </button>
                           <button
-                            onClick={() => handleRejectTask(task._id)}
+                            onClick={() => {
+                              setRejectModalTaskId(task._id)
+                              setReviewNotesInput('')
+                            }}
                             className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-1 whitespace-nowrap"
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -384,11 +367,11 @@ const AllTeamTasks = () => {
                             onChange={(e) => handleStatusChange(task._id, e.target.value)}
                             className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent min-w-[160px]"
                           >
-                            <option value="To Do">📋 To Do</option>
-                            <option value="In Progress">⚡ In Progress</option>
-                            <option value="Pending Review">👀 Pending Review</option>
-                            <option value="Completed">✅ Completed</option>
-                            <option value="Blocked">🚫 Blocked</option>
+                            <option value="To Do">To Do</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Pending Review">Pending Review</option>
+                            <option value="Completed">Completed</option>
+                            <option value="Blocked">Blocked</option>
                           </select>
                         </div>
                       )}
@@ -400,6 +383,52 @@ const AllTeamTasks = () => {
           )}
         </div>
       </div>
+
+      {/* Sprint Pagination */}
+      {pagination?.sprints && pagination.sprints.totalPages > 1 && (
+        <PaginationControls
+          currentPage={sprintPage}
+          totalPages={pagination.sprints.totalPages}
+          label="Sprint page"
+          onPrevious={() => setSprintPage((prev) => Math.max(prev - 1, 1))}
+          onNext={() => setSprintPage((prev) => Math.min(prev + 1, pagination.sprints.totalPages))}
+          canPrevious={!loading && sprintPage > 1}
+          canNext={!loading && sprintPage < pagination.sprints.totalPages}
+        />
+      )}
+
+      {rejectModalTaskId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-[60]">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5">
+            <h3 className="text-lg font-bold text-gray-900">Reject Task</h3>
+            <p className="text-sm text-gray-600 mt-1">Provide feedback for the developer.</p>
+            <textarea
+              value={reviewNotesInput}
+              onChange={(e) => setReviewNotesInput(e.target.value)}
+              rows={4}
+              className="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              placeholder="Add clear feedback..."
+            />
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setRejectModalTaskId(null)
+                  setReviewNotesInput('')
+                }}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRejectTask}
+                className="px-4 py-2 text-sm rounded-lg bg-red-600 text-white hover:bg-red-700"
+              >
+                Reject Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

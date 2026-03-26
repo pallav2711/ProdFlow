@@ -184,6 +184,12 @@ MONGODB_URI=mongodb+srv://pallavkanani27_db_user:BcudjJZC1dDuC97R@cluster0.ug3q9
 JWT_SECRET=your-secret-key
 AI_SERVICE_URL=http://localhost:8000
 FRONTEND_URL=https://prodflowaii.vercel.app
+AI_REQUEST_TIMEOUT_MS=4000
+AI_MAX_RETRIES=1
+AI_RETRY_BASE_DELAY_MS=300
+SERVER_REQUEST_TIMEOUT_MS=30000
+SERVER_HEADERS_TIMEOUT_MS=35000
+SERVER_KEEP_ALIVE_TIMEOUT_MS=5000
 ```
 
 #### Frontend
@@ -217,6 +223,7 @@ ENVIRONMENT=production
 - **Static Asset Caching** with proper headers
 - **Code Splitting** in frontend for faster loading
 - **Docker Multi-stage Builds** for smaller images
+- **AI timeout/retry fallback** for resilient sprint creation
 
 ## 🧪 Testing
 
@@ -224,6 +231,23 @@ ENVIRONMENT=production
 ```bash
 cd backend
 npm test
+```
+
+Runs an end-to-end backend smoke workflow against `http://localhost:5000/api` by default.
+You can override target API with:
+
+```bash
+TEST_API_BASE_URL=http://localhost:5000/api npm test
+```
+
+Quick modes:
+
+```bash
+# Fast smoke (auth + role guards + pagination contracts)
+npm run test:fast
+
+# Full critical workflow (invites, sprint, task review/approval)
+npm run test:full
 ```
 
 ### Frontend Testing
@@ -247,6 +271,37 @@ The backend provides a comprehensive RESTful API:
 - **Teams**: `/api/teams/*`
 - **Sprints**: `/api/sprints/*`
 - **AI Predictions**: `/ai/sprint-success`
+
+### Pagination (Performance)
+
+List endpoints support optional pagination query params:
+
+- `page`: 1-based page number
+- `limit`: items per page (max `100`)
+
+When pagination is provided, responses include:
+
+- `totalCount`
+- `page`
+- `limit`
+- `totalPages`
+
+Example:
+
+```bash
+GET /api/sprints?page=1&limit=20
+GET /api/products?page=2&limit=10
+GET /api/sprints/my-tasks?page=1&limit=25
+```
+
+Supported paginated list routes:
+
+- `/api/products`
+- `/api/products/:id/features`
+- `/api/sprints`
+- `/api/sprints/my-tasks`
+- `/api/teams/invitations`
+- `/api/teams/product/:productId`
 
 Full API documentation is available in `backend/API.md`.
 

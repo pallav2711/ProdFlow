@@ -7,6 +7,8 @@ const express = require('express');
 const router = express.Router();
 const mongoose = require('mongoose');
 const axios = require('axios');
+const asyncHandler = require('../middleware/asyncHandler');
+const sendSuccess = require('../utils/successResponse');
 
 // Basic health check
 router.get('/', (req, res) => {
@@ -19,12 +21,11 @@ router.get('/', (req, res) => {
     version: process.env.npm_package_version || '1.0.0'
   };
   
-  res.json(healthCheck);
+  return sendSuccess(res, { data: healthCheck });
 });
 
 // Detailed system status
-router.get('/status', async (req, res) => {
-  try {
+router.get('/status', asyncHandler(async (req, res) => {
     const status = {
       status: 'ok',
       timestamp: new Date().toISOString(),
@@ -60,19 +61,12 @@ router.get('/status', async (req, res) => {
       }
     }
 
-    res.json(status);
-  } catch (error) {
-    res.status(500).json({
-      status: 'error',
-      message: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-});
+    return sendSuccess(res, { data: status });
+}));
 
 // Lightweight ping endpoint for monitoring
 router.get('/ping', (req, res) => {
-  res.status(200).send('pong');
+  return res.status(200).send('pong');
 });
 
 module.exports = router;

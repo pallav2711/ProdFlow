@@ -47,4 +47,9 @@ const featureSchema = new mongoose.Schema({
   }
 });
 
+// Common read/query paths
+featureSchema.index({ product: 1, status: 1, createdAt: -1 });
+featureSchema.index({ product: 1, createdAt: -1 });
+featureSchema.index({ product: 1, priority: 1 });
+
 module.exports = mongoose.model('Feature', featureSchema);

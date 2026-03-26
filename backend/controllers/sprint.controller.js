@@ -7,12 +7,14 @@ const Sprint = require('../models/Sprint');
 const Task = require('../models/Task');
 const Feature = require('../models/Feature');
 const ProjectMember = require('../models/ProjectMember');
-const axios = require('axios');
+const { validationError, forbiddenError, notFoundError } = require('../utils/errorFactory');
+const { parsePagination } = require('../utils/pagination');
+const { fetchSprintPrediction } = require('../utils/aiClient');
 
 // @desc    Create new sprint with AI prediction
 // @route   POST /api/sprints
 // @access  Private (Team Lead only)
-exports.createSprint = async (req, res) => {
+exports.createSprint = async (req, res, next) => {
   try {
     const { name, product, duration, startDate, endDate, teamSize, features } = req.body;
 
@@ -30,35 +32,26 @@ exports.createSprint = async (req, res) => {
 
     // Validate required fields
     if (!name || !product || !duration || !startDate || !endDate || !teamSize) {
-      return res.status(400).json({
-        success: false,
-        message: 'Missing required fields: name, product, duration, startDate, endDate, teamSize'
-      });
+      return next(validationError(
+        'Missing required fields: name, product, duration, startDate, endDate, teamSize',
+        'MISSING_REQUIRED_FIELDS'
+      ));
     }
 
     // Validate data types
     if (isNaN(duration) || isNaN(teamSize)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Duration and team size must be valid numbers'
-      });
+      return next(validationError('Duration and team size must be valid numbers', 'INVALID_NUMERIC_FIELDS'));
     }
 
     // Validate dates
     const start = new Date(startDate);
     const end = new Date(endDate);
     if (isNaN(start.getTime()) || isNaN(end.getTime())) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid date format for startDate or endDate'
-      });
+      return next(validationError('Invalid date format for startDate or endDate', 'INVALID_DATE_FORMAT'));
     }
 
     if (end <= start) {
-      return res.status(400).json({
-        success: false,
-        message: 'End date must be after start date'
-      });
+      return next(validationError('End date must be after start date', 'INVALID_DATE_RANGE'));
     }
 
     // Handle features array - fix the parsing issue
@@ -72,10 +65,7 @@ exports.createSprint = async (req, res) => {
           featuresArray = JSON.parse(features);
         } catch (e) {
           console.error('Failed to parse features string:', features);
-          return res.status(400).json({
-            success: false,
-            message: 'Invalid features format'
-          });
+          return next(validationError('Invalid features format', 'INVALID_FEATURES_FORMAT'));
         }
       } else if (typeof features === 'object') {
         // Convert object to array if needed
@@ -93,10 +83,7 @@ exports.createSprint = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'You are not a member of this product'
-      });
+      return next(forbiddenError('You are not a member of this product', 'PRODUCT_MEMBERSHIP_REQUIRED'));
     }
 
     // Calculate total estimated effort from features (handle empty features array)
@@ -123,21 +110,30 @@ exports.createSprint = async (req, res) => {
 
     // Call AI service for prediction
     try {
-      const aiResponse = await axios.post(`${process.env.AI_SERVICE_URL}/ai/sprint-success`, {
-        total_tasks: totalTasks,
-        sprint_duration: duration,
-        team_size: teamSize,
-        estimated_effort: totalEffort
+      const prediction = await fetchSprintPrediction({
+        totalTasks,
+        duration,
+        teamSize,
+        totalEffort,
+        requestId: req.requestId
       });
 
       // Update sprint with AI prediction
       sprint.aiPrediction = {
-        successProbability: aiResponse.data.success_probability,
+        successProbability: prediction.successProbability,
         predictedAt: new Date()
       };
       await sprint.save();
     } catch (aiError) {
-      console.error('AI Service Error:', aiError.message);
+      console.error(
+        JSON.stringify({
+          level: 'warn',
+          event: 'ai_prediction_unavailable',
+          requestId: req.requestId,
+          sprintId: sprint._id?.toString?.(),
+          message: aiError.message
+        })
+      );
       // Continue without AI prediction if service is unavailable
     }
 
@@ -159,79 +155,97 @@ exports.createSprint = async (req, res) => {
       sprint: populatedSprint
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Get all sprints
 // @route   GET /api/sprints
 // @access  Private
-exports.getSprints = async (req, res) => {
+exports.getSprints = async (req, res, next) => {
   try {
+    const pagination = parsePagination(req.query);
+
     // Get products user is a member of
     const memberships = await ProjectMember.find({
       user: req.user.id,
       status: 'active'
-    });
+    }).select('product').lean();
 
     if (!memberships || memberships.length === 0) {
       return res.status(200).json({
         success: true,
         count: 0,
+        ...(pagination ? {
+          totalCount: 0,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: 1
+        } : {}),
         sprints: [],
         message: 'No product memberships found'
       });
     }
 
-    const productIds = memberships.map(m => m.product);
+    const productIds = memberships.map((m) => m.product);
 
     // Get sprints for those products
-    const sprints = await Sprint.find({
+    const filter = {
       product: { $in: productIds }
-    })
+    };
+
+    let sprintQuery = Sprint.find(filter)
+      .select('name product duration startDate endDate teamSize aiPrediction status createdBy createdAt')
       .populate('product', 'name')
       .populate('createdBy', 'name email')
       .sort('-createdAt');
 
+    if (pagination) {
+      sprintQuery = sprintQuery.skip(pagination.skip).limit(pagination.limit);
+    }
+
+    const sprints = await sprintQuery.lean();
+    const totalCount = pagination ? await Sprint.countDocuments(filter) : sprints.length;
+
     res.status(200).json({
       success: true,
       count: sprints.length,
+      ...(pagination ? {
+        totalCount,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit) || 1
+      } : {}),
       sprints: sprints || []
     });
   } catch (error) {
     console.error('Error in getSprints:', error);
-    res.status(500).json({
-      success: false,
-      message: error.message,
-      sprints: []
-    });
+    return next(error);
   }
 };
 
 // @desc    Get single sprint
 // @route   GET /api/sprints/:id
 // @access  Private
-exports.getSprint = async (req, res) => {
+exports.getSprint = async (req, res, next) => {
   try {
     const sprint = await Sprint.findById(req.params.id)
+      .select('name product duration startDate endDate teamSize features aiPrediction status createdBy createdAt')
       .populate('product', 'name vision')
       .populate('features')
-      .populate('createdBy', 'name email');
+      .populate('createdBy', 'name email')
+      .lean();
 
     if (!sprint) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sprint not found'
-      });
+      return next(notFoundError('Sprint not found', 'SPRINT_NOT_FOUND'));
     }
 
     // Get tasks for this sprint
     const tasks = await Task.find({ sprint: sprint._id })
+      .select('sprint feature title description assignedTo workType estimatedHours status reviewedBy reviewedAt reviewNotes createdAt')
       .populate('feature', 'name')
-      .populate('assignedTo', 'name email');
+      .populate('assignedTo', 'name email')
+      .lean();
 
     res.status(200).json({
       success: true,
@@ -239,25 +253,19 @@ exports.getSprint = async (req, res) => {
       tasks
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Add task to sprint
 // @route   POST /api/sprints/:id/tasks
 // @access  Private (Team Lead only)
-exports.addTask = async (req, res) => {
+exports.addTask = async (req, res, next) => {
   try {
     const sprint = await Sprint.findById(req.params.id);
 
     if (!sprint) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sprint not found'
-      });
+      return next(notFoundError('Sprint not found', 'SPRINT_NOT_FOUND'));
     }
 
     const { feature, title, description, assignedTo, estimatedHours, workType } = req.body;
@@ -281,17 +289,14 @@ exports.addTask = async (req, res) => {
       task: populatedTask
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Update task status
 // @route   PUT /api/sprints/tasks/:taskId
 // @access  Private
-exports.updateTaskStatus = async (req, res) => {
+exports.updateTaskStatus = async (req, res, next) => {
   try {
     const { status, reviewNotes } = req.body;
 
@@ -300,10 +305,7 @@ exports.updateTaskStatus = async (req, res) => {
       .populate('assignedTo', 'name email');
 
     if (!task) {
-      return res.status(404).json({
-        success: false,
-        message: 'Task not found'
-      });
+      return next(notFoundError('Task not found', 'TASK_NOT_FOUND'));
     }
 
     // Check user's role in the product
@@ -314,10 +316,7 @@ exports.updateTaskStatus = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'You are not authorized to update this task'
-      });
+      return next(forbiddenError('You are not authorized to update this task', 'TASK_UPDATE_FORBIDDEN'));
     }
 
     // Role-based status update rules
@@ -327,18 +326,15 @@ exports.updateTaskStatus = async (req, res) => {
     // Developers can only move tasks to: In Progress, Pending Review, Blocked
     if (userRole === 'Developer') {
       if (status === 'Completed') {
-        return res.status(403).json({
-          success: false,
-          message: 'Developers cannot mark tasks as Completed. Please submit for review (Pending Review) instead.'
-        });
+        return next(forbiddenError(
+          'Developers cannot mark tasks as Completed. Please submit for review (Pending Review) instead.',
+          'INVALID_STATUS_TRANSITION'
+        ));
       }
       
       // Developers can only update their own tasks
       if (task.assignedTo && task.assignedTo._id.toString() !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'You can only update tasks assigned to you'
-        });
+        return next(forbiddenError('You can only update tasks assigned to you', 'TASK_OWNERSHIP_REQUIRED'));
       }
     }
 
@@ -349,10 +345,7 @@ exports.updateTaskStatus = async (req, res) => {
         task.reviewedAt = new Date();
         task.reviewNotes = reviewNotes || 'Approved';
       } else {
-        return res.status(403).json({
-          success: false,
-          message: 'Only Team Lead or Product Manager can approve tasks'
-        });
+        return next(forbiddenError('Only Team Lead or Product Manager can approve tasks', 'TASK_APPROVAL_FORBIDDEN'));
       }
     }
 
@@ -384,17 +377,14 @@ exports.updateTaskStatus = async (req, res) => {
       sprintCompleted: allCompleted && allTasks.length > 0
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Reject task (Team Lead sends back for revision)
 // @route   PUT /api/sprints/tasks/:taskId/reject
 // @access  Private (Team Lead or Product Manager)
-exports.rejectTask = async (req, res) => {
+exports.rejectTask = async (req, res, next) => {
   try {
     const { reviewNotes } = req.body;
 
@@ -403,10 +393,7 @@ exports.rejectTask = async (req, res) => {
       .populate('assignedTo', 'name email');
 
     if (!task) {
-      return res.status(404).json({
-        success: false,
-        message: 'Task not found'
-      });
+      return next(notFoundError('Task not found', 'TASK_NOT_FOUND'));
     }
 
     // Check user's role in the product
@@ -417,26 +404,20 @@ exports.rejectTask = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'You are not authorized to reject this task'
-      });
+      return next(forbiddenError('You are not authorized to reject this task', 'TASK_REJECT_FORBIDDEN'));
     }
 
     // Only Team Lead or Product Manager can reject
     if (membership.role !== 'Team Lead' && membership.role !== 'Product Manager') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only Team Lead or Product Manager can reject tasks'
-      });
+      return next(forbiddenError('Only Team Lead or Product Manager can reject tasks', 'TASK_REJECT_ROLE_FORBIDDEN'));
     }
 
     // Can only reject tasks in Pending Review
     if (task.status !== 'Pending Review') {
-      return res.status(400).json({
-        success: false,
-        message: 'Can only reject tasks that are in Pending Review status'
-      });
+      return next(validationError(
+        'Can only reject tasks that are in Pending Review status',
+        'INVALID_TASK_REJECT_STATE'
+      ));
     }
 
     // Send back to In Progress with review notes
@@ -457,25 +438,19 @@ exports.rejectTask = async (req, res) => {
       message: 'Task sent back for revision'
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Delete sprint
 // @route   DELETE /api/sprints/:id
 // @access  Private (Team Lead or Product Manager)
-exports.deleteSprint = async (req, res) => {
+exports.deleteSprint = async (req, res, next) => {
   try {
     const sprint = await Sprint.findById(req.params.id);
 
     if (!sprint) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sprint not found'
-      });
+      return next(notFoundError('Sprint not found', 'SPRINT_NOT_FOUND'));
     }
 
     // Check if user is a member of the product
@@ -486,10 +461,7 @@ exports.deleteSprint = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'You are not authorized to delete this sprint'
-      });
+      return next(forbiddenError('You are not authorized to delete this sprint', 'SPRINT_DELETE_FORBIDDEN'));
     }
 
     // Delete all tasks associated with this sprint
@@ -509,25 +481,19 @@ exports.deleteSprint = async (req, res) => {
       message: 'Sprint and associated tasks deleted successfully'
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Update sprint
 // @route   PUT /api/sprints/:id
 // @access  Private (Team Lead or Product Manager)
-exports.updateSprint = async (req, res) => {
+exports.updateSprint = async (req, res, next) => {
   try {
     const sprint = await Sprint.findById(req.params.id);
 
     if (!sprint) {
-      return res.status(404).json({
-        success: false,
-        message: 'Sprint not found'
-      });
+      return next(notFoundError('Sprint not found', 'SPRINT_NOT_FOUND'));
     }
 
     // Check if user is a member of the product
@@ -538,10 +504,7 @@ exports.updateSprint = async (req, res) => {
     });
 
     if (!membership) {
-      return res.status(403).json({
-        success: false,
-        message: 'You are not authorized to update this sprint'
-      });
+      return next(forbiddenError('You are not authorized to update this sprint', 'SPRINT_UPDATE_FORBIDDEN'));
     }
 
     const { name, duration, startDate, endDate, teamSize, status } = req.body;
@@ -565,34 +528,46 @@ exports.updateSprint = async (req, res) => {
       sprint: updatedSprint
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
 
 // @desc    Get tasks assigned to current user
 // @route   GET /api/sprints/my-tasks
 // @access  Private
-exports.getMyTasks = async (req, res) => {
+exports.getMyTasks = async (req, res, next) => {
   try {
+    const pagination = parsePagination(req.query);
+
     // Get all tasks assigned to current user
-    const tasks = await Task.find({ assignedTo: req.user.id })
+    const filter = { assignedTo: req.user.id };
+
+    let taskQuery = Task.find(filter)
+      .select('sprint feature title description assignedTo workType estimatedHours status reviewedBy reviewedAt reviewNotes createdAt')
       .populate('feature', 'name')
       .populate('sprint', 'name')
       .populate('assignedTo', 'name email')
       .sort('-createdAt');
 
+    if (pagination) {
+      taskQuery = taskQuery.skip(pagination.skip).limit(pagination.limit);
+    }
+
+    const tasks = await taskQuery.lean();
+    const totalCount = pagination ? await Task.countDocuments(filter) : tasks.length;
+
     res.status(200).json({
       success: true,
       count: tasks.length,
+      ...(pagination ? {
+        totalCount,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit) || 1
+      } : {}),
       tasks
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message
-    });
+    return next(error);
   }
 };
