@@ -44,13 +44,18 @@ exports.register = async (req, res) => {
       role
     });
 
+    // For registration, default to session-only (no rememberMe)
+    const rememberMe = false;
+    
     // Generate tokens
     const accessToken = generateAccessToken(user._id, rememberMe);
     const refreshToken = rememberMe ? generateRefreshToken(user._id) : null;
 
     // Store refresh token in user document (for security)
-    user.refreshToken = refreshToken;
-    await user.save();
+    if (refreshToken) {
+      user.refreshToken = refreshToken;
+      await user.save();
+    }
 
     res.status(201).json({
       success: true,
