@@ -16,6 +16,18 @@ exports.createSprint = async (req, res) => {
   try {
     const { name, product, duration, startDate, endDate, teamSize, features } = req.body;
 
+    console.log('Sprint creation request:', {
+      name,
+      product,
+      duration,
+      startDate,
+      endDate,
+      teamSize,
+      features,
+      featuresType: typeof features,
+      featuresIsArray: Array.isArray(features)
+    });
+
     // Validate required fields
     if (!name || !product || !duration || !startDate || !endDate || !teamSize) {
       return res.status(400).json({
@@ -49,6 +61,30 @@ exports.createSprint = async (req, res) => {
       });
     }
 
+    // Handle features array - fix the parsing issue
+    let featuresArray = [];
+    if (features) {
+      if (Array.isArray(features)) {
+        featuresArray = features;
+      } else if (typeof features === 'string') {
+        try {
+          // Try to parse if it's a stringified array
+          featuresArray = JSON.parse(features);
+        } catch (e) {
+          console.error('Failed to parse features string:', features);
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid features format'
+          });
+        }
+      } else if (typeof features === 'object') {
+        // Convert object to array if needed
+        featuresArray = Object.values(features);
+      }
+    }
+
+    console.log('Processed features array:', featuresArray);
+
     // Check if user is a member of this product
     const membership = await ProjectMember.findOne({
       product: product,
@@ -67,8 +103,8 @@ exports.createSprint = async (req, res) => {
     let totalEffort = 0;
     let totalTasks = 0;
     
-    if (features && features.length > 0) {
-      const featureList = await Feature.find({ _id: { $in: features } });
+    if (featuresArray && featuresArray.length > 0) {
+      const featureList = await Feature.find({ _id: { $in: featuresArray } });
       totalEffort = featureList.reduce((sum, f) => sum + (f.estimatedEffort || 0), 0);
       totalTasks = featureList.length;
     }
@@ -81,7 +117,7 @@ exports.createSprint = async (req, res) => {
       startDate: start,
       endDate: end,
       teamSize: parseInt(teamSize),
-      features: features || [],
+      features: featuresArray,
       createdBy: req.user.id
     });
 
@@ -106,10 +142,12 @@ exports.createSprint = async (req, res) => {
     }
 
     // Update feature status
-    await Feature.updateMany(
-      { _id: { $in: features } },
-      { status: 'In Sprint' }
-    );
+    if (featuresArray && featuresArray.length > 0) {
+      await Feature.updateMany(
+        { _id: { $in: featuresArray } },
+        { status: 'In Sprint' }
+      );
+    }
 
     const populatedSprint = await Sprint.findById(sprint._id)
       .populate('product', 'name')

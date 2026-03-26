@@ -25,7 +25,7 @@ router.use(protect);
 router.get('/my-tasks', getMyTasks);
 
 router.route('/')
-  .post(authorize('Team Lead', 'Product Manager'), validateSprint, createSprint)
+  .post(authorize('Team Lead', 'Product Manager'), createSprint)
   .get(getSprints);
 
 router.route('/:id')

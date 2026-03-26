@@ -190,6 +190,11 @@ const SprintPlanner = () => {
   const handleSprintSubmit = async (e) => {
     e.preventDefault()
     try {
+      console.log('Submitting sprint form:', sprintForm);
+      console.log('Features array:', sprintForm.features);
+      console.log('Features type:', typeof sprintForm.features);
+      console.log('Features is array:', Array.isArray(sprintForm.features));
+      
       // Create sprint
       const sprintRes = await api.post('/sprints', sprintForm)
       const createdSprint = sprintRes.data.sprint
