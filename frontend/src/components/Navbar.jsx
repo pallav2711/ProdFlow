@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useState, useEffect } from 'react'
 import api from '../api/config'
+import SystemStatus from './SystemStatus'
 
 const Navbar = () => {
   const { user, logout } = useAuth()
@@ -10,6 +11,7 @@ const Navbar = () => {
   const isLanding = location.pathname === '/'
   const [invitations, setInvitations] = useState([])
   const [showInvitationsModal, setShowInvitationsModal] = useState(false)
+  const [showSystemStatus, setShowSystemStatus] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -109,6 +111,17 @@ const Navbar = () => {
                     <Link to="/my-tasks" className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
                       My Tasks
                     </Link>
+                  )}
+
+                  {/* System Status Button (Development) */}
+                  {import.meta.env.DEV && (
+                    <button
+                      onClick={() => setShowSystemStatus(true)}
+                      className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target"
+                      title="System Status"
+                    >
+                      🔧
+                    </button>
                   )}
 
                   {/* Invitations Badge */}
@@ -375,6 +388,10 @@ const Navbar = () => {
             )}
           </div>
         </div>
+      )}
+      {/* System Status Modal */}
+      {showSystemStatus && (
+        <SystemStatus onClose={() => setShowSystemStatus(false)} />
       )}
     </>
   )

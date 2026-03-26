@@ -12,6 +12,7 @@ const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/database');
+const errorHandler = require('./middleware/errorHandler');
 
 // Load environment variables from .env file
 const envPath = path.join(__dirname, '.env');
@@ -235,27 +236,11 @@ app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/products', require('./routes/product.routes'));
 app.use('/api/sprints', require('./routes/sprint.routes'));
 app.use('/api/teams', require('./routes/team.routes'));
+app.use('/api/health', require('./routes/health.routes'));
 
-// Health check endpoint with detailed info
-app.get('/api/health', (req, res) => {
-  const healthCheck = {
-    status: 'ok',
-    message: 'ProdFlow AI Backend is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV,
-    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    uptime: process.uptime(),
-    memory: process.memoryUsage(),
-    version: process.version
-  };
-  
-  res.json(healthCheck);
-});
-
-// Lightweight ping endpoint for monitoring
-app.get('/ping', (req, res) => {
-  res.status(200).send('pong');
-});
+// Legacy health check endpoints (for backward compatibility)
+app.get('/health', (req, res) => res.redirect('/api/health'));
+app.get('/ping', (req, res) => res.redirect('/api/health/ping'));
 
 // 404 handler for API routes
 app.use('/api/*', (req, res) => {
@@ -267,18 +252,7 @@ app.use('/api/*', (req, res) => {
 });
 
 // Global error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  
-  // Don't leak error details in production
-  const isDevelopment = process.env.NODE_ENV !== 'production';
-  
-  res.status(err.status || 500).json({
-    success: false,
-    message: err.message || 'Internal Server Error',
-    ...(isDevelopment && { stack: err.stack })
-  });
-});
+app.use(errorHandler);
 
 // Graceful shutdown handling
 process.on('SIGTERM', () => {

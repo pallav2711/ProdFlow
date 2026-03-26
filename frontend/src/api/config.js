@@ -3,7 +3,7 @@ import axios from 'axios';
 // Create axios instance with optimized configuration
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
-  timeout: 15000, // Increased timeout for free hosting
+  timeout: 30000, // Increased timeout for better reliability
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
@@ -15,6 +15,22 @@ const api = axios.create({
   // Retry configuration for unreliable free hosting
   validateStatus: (status) => status < 500, // Don't throw on 4xx errors
 });
+
+// Request queue for handling concurrent requests
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach(prom => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  
+  failedQueue = [];
+};
 
 // Add request interceptor
 api.interceptors.request.use(
@@ -32,6 +48,9 @@ api.interceptors.request.use(
     // Add request timestamp for performance monitoring
     config.metadata = { startTime: Date.now() };
     
+    // Add request ID for tracking
+    config.headers['X-Request-ID'] = Math.random().toString(36).substring(7);
+    
     return config;
   },
   (error) => {
@@ -40,7 +59,7 @@ api.interceptors.request.use(
   }
 );
 
-// Add response interceptor with error handling
+// Add response interceptor with enhanced error handling
 api.interceptors.response.use(
   (response) => {
     // Log response time in development
@@ -55,40 +74,86 @@ api.interceptors.response.use(
     const originalRequest = error.config;
 
     // Handle network errors with retry logic for free hosting
-    if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED') {
-      if (!originalRequest._retry && originalRequest._retryCount < 2) {
+    if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
+      if (!originalRequest._retry && (originalRequest._retryCount || 0) < 3) {
         originalRequest._retry = true;
         originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
         
-        console.log(`Retrying request (${originalRequest._retryCount}/2):`, originalRequest.url);
+        console.log(`Retrying request (${originalRequest._retryCount}/3):`, originalRequest.url);
         
-        // Exponential backoff
-        await new Promise(resolve => setTimeout(resolve, 1000 * originalRequest._retryCount));
+        // Exponential backoff with jitter
+        const delay = Math.min(1000 * Math.pow(2, originalRequest._retryCount - 1), 10000) + Math.random() * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
         
         return api(originalRequest);
       }
     }
 
-    // Handle 401 errors (authentication)
-    if (error.response?.status === 401) {
-      // Clear tokens and redirect to login
-      localStorage.removeItem('accessToken');
-      localStorage.removeItem('refreshToken');
-      localStorage.removeItem('token');
-      sessionStorage.removeItem('token');
-      
-      // Only redirect if not already on login page
-      if (!window.location.pathname.includes('/login')) {
-        window.location.href = '/login';
+    // Handle 401 errors (authentication) with token refresh
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      if (isRefreshing) {
+        // If already refreshing, queue the request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`;
+          return api(originalRequest);
+        }).catch(err => {
+          return Promise.reject(err);
+        });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const refreshToken = localStorage.getItem('refreshToken');
+        if (refreshToken) {
+          const response = await api.post('/auth/refresh', { refreshToken });
+          const { accessToken } = response.data;
+          
+          localStorage.setItem('accessToken', accessToken);
+          api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+          
+          processQueue(null, accessToken);
+          
+          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
+          return api(originalRequest);
+        }
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        // Clear tokens and redirect to login
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('token');
+        sessionStorage.removeItem('token');
+        
+        // Only redirect if not already on login page
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
+      } finally {
+        isRefreshing = false;
       }
     }
 
     // Handle 429 (rate limiting) with exponential backoff
     if (error.response?.status === 429) {
-      const retryAfter = error.response.headers['retry-after'] || 1;
+      const retryAfter = parseInt(error.response.headers['retry-after']) || 1;
       console.log(`Rate limited. Retrying after ${retryAfter} seconds...`);
       
       await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+      return api(originalRequest);
+    }
+
+    // Handle 5xx errors with retry
+    if (error.response?.status >= 500 && (originalRequest._serverRetryCount || 0) < 2) {
+      originalRequest._serverRetryCount = (originalRequest._serverRetryCount || 0) + 1;
+      
+      console.log(`Server error, retrying (${originalRequest._serverRetryCount}/2):`, originalRequest.url);
+      
+      // Wait before retrying server errors
+      await new Promise(resolve => setTimeout(resolve, 2000 * originalRequest._serverRetryCount));
       return api(originalRequest);
     }
 
@@ -99,7 +164,8 @@ api.interceptors.response.use(
         method: error.config?.method,
         status: error.response?.status,
         message: error.message,
-        data: error.response?.data
+        data: error.response?.data,
+        requestId: error.config?.headers?.['X-Request-ID']
       });
     }
 
@@ -117,6 +183,17 @@ export const preloadCriticalData = async () => {
     }
   } catch (error) {
     console.log('Preload failed:', error.message);
+  }
+};
+
+// Health check function
+export const checkApiHealth = async () => {
+  try {
+    const response = await api.get('/health/status', { timeout: 5000 });
+    return response.data;
+  } catch (error) {
+    console.error('Health check failed:', error.message);
+    return { status: 'error', message: error.message };
   }
 };
 
