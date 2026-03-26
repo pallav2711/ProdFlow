@@ -87,6 +87,14 @@ app.use((req, res, next) => {
   // Feature Policy
   res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
   
+  // Additional CORS headers for preflight requests
+  if (req.method === 'OPTIONS') {
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, X-Request-ID, Accept, Origin');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.setHeader('Access-Control-Max-Age', '86400'); // Cache preflight for 24 hours
+    return res.status(200).end();
+  }
+  
   next();
 });
 
@@ -152,7 +160,14 @@ app.use(cors({
   credentials: true,
   optionsSuccessStatus: 200, // For legacy browser support
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  allowedHeaders: [
+    'Content-Type', 
+    'Authorization', 
+    'X-Requested-With',
+    'X-Request-ID',
+    'Accept',
+    'Origin'
+  ]
 }));
 
 // Body parsing middleware with size limits and validation
