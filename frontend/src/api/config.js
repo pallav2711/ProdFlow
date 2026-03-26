@@ -91,6 +91,8 @@ api.interceptors.response.use(
 
     // Handle 401 errors (authentication) with token refresh
     if (error.response?.status === 401 && !originalRequest._retry) {
+      console.log('401 error detected, attempting token refresh...');
+      
       if (isRefreshing) {
         // If already refreshing, queue the request
         return new Promise((resolve, reject) => {
@@ -109,6 +111,7 @@ api.interceptors.response.use(
       try {
         const refreshToken = localStorage.getItem('refreshToken');
         if (refreshToken) {
+          console.log('Attempting to refresh token...');
           const response = await api.post('/auth/refresh', { refreshToken });
           const { accessToken } = response.data;
           
@@ -119,19 +122,28 @@ api.interceptors.response.use(
           
           originalRequest.headers.Authorization = `Bearer ${accessToken}`;
           return api(originalRequest);
+        } else {
+          console.log('No refresh token available');
+          throw new Error('No refresh token available');
         }
       } catch (refreshError) {
+        console.error('Token refresh failed:', refreshError);
         processQueue(refreshError, null);
+        
         // Clear tokens and redirect to login
         localStorage.removeItem('accessToken');
         localStorage.removeItem('refreshToken');
         localStorage.removeItem('token');
         sessionStorage.removeItem('token');
+        sessionStorage.removeItem('accessToken');
         
         // Only redirect if not already on login page
-        if (!window.location.pathname.includes('/login')) {
+        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
+          console.log('Redirecting to login due to authentication failure');
           window.location.href = '/login';
         }
+        
+        return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;
       }

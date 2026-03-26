@@ -64,7 +64,7 @@ export const DashboardProvider = ({ children }) => {
         api.get('/sprints/my-tasks')
       ])
       
-      const sprintsData = sprintsRes.data.sprints
+      const sprintsData = sprintsRes.data.sprints || []
       
       // Fetch all tasks from all sprints for "All Team Tasks" tab
       const allTasksPromises = sprintsData.map(sprint =>
@@ -81,7 +81,7 @@ export const DashboardProvider = ({ children }) => {
       const userTasks = myTasksRes.data.tasks || []
       
       const newStats = {
-        products: productsRes.data.count,
+        products: productsRes.data.count || 0,
         sprints: sprintsData.length,
         activeSprints: sprintsData.filter(s => s.status === 'Active').length,
         completedSprints: sprintsData.filter(s => s.status === 'Completed').length,
@@ -104,11 +104,26 @@ export const DashboardProvider = ({ children }) => {
       return newData
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
-      setDashboardData(prev => ({
-        ...prev,
+      
+      // Provide fallback data structure
+      const fallbackData = {
+        stats: {
+          products: 0,
+          sprints: 0,
+          activeSprints: 0,
+          completedSprints: 0,
+          myTasks: 0,
+          completedTasks: 0
+        },
+        myTasks: [],
+        allTasks: [],
+        sprints: [],
         loading: false,
-        error: error.message || 'Failed to fetch dashboard data'
-      }))
+        lastFetch: Date.now(),
+        error: error.response?.data?.message || error.message || 'Failed to fetch dashboard data'
+      }
+      
+      setDashboardData(fallbackData)
       throw error
     }
   }

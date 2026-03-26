@@ -16,6 +16,39 @@ exports.createSprint = async (req, res) => {
   try {
     const { name, product, duration, startDate, endDate, teamSize, features } = req.body;
 
+    // Validate required fields
+    if (!name || !product || !duration || !startDate || !endDate || !teamSize) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: name, product, duration, startDate, endDate, teamSize'
+      });
+    }
+
+    // Validate data types
+    if (isNaN(duration) || isNaN(teamSize)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Duration and team size must be valid numbers'
+      });
+    }
+
+    // Validate dates
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid date format for startDate or endDate'
+      });
+    }
+
+    if (end <= start) {
+      return res.status(400).json({
+        success: false,
+        message: 'End date must be after start date'
+      });
+    }
+
     // Check if user is a member of this product
     const membership = await ProjectMember.findOne({
       product: product,
@@ -30,20 +63,25 @@ exports.createSprint = async (req, res) => {
       });
     }
 
-    // Calculate total estimated effort from features
-    const featureList = await Feature.find({ _id: { $in: features } });
-    const totalEffort = featureList.reduce((sum, f) => sum + f.estimatedEffort, 0);
-    const totalTasks = featureList.length;
+    // Calculate total estimated effort from features (handle empty features array)
+    let totalEffort = 0;
+    let totalTasks = 0;
+    
+    if (features && features.length > 0) {
+      const featureList = await Feature.find({ _id: { $in: features } });
+      totalEffort = featureList.reduce((sum, f) => sum + (f.estimatedEffort || 0), 0);
+      totalTasks = featureList.length;
+    }
 
     // Create sprint
     const sprint = await Sprint.create({
       name,
       product,
-      duration,
-      startDate,
-      endDate,
-      teamSize,
-      features,
+      duration: parseInt(duration),
+      startDate: start,
+      endDate: end,
+      teamSize: parseInt(teamSize),
+      features: features || [],
       createdBy: req.user.id
     });
 
@@ -101,6 +139,15 @@ exports.getSprints = async (req, res) => {
       status: 'active'
     });
 
+    if (!memberships || memberships.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        sprints: [],
+        message: 'No product memberships found'
+      });
+    }
+
     const productIds = memberships.map(m => m.product);
 
     // Get sprints for those products
@@ -114,12 +161,14 @@ exports.getSprints = async (req, res) => {
     res.status(200).json({
       success: true,
       count: sprints.length,
-      sprints
+      sprints: sprints || []
     });
   } catch (error) {
+    console.error('Error in getSprints:', error);
     res.status(500).json({
       success: false,
-      message: error.message
+      message: error.message,
+      sprints: []
     });
   }
 };
