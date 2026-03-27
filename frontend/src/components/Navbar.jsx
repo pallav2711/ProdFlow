@@ -98,7 +98,7 @@ const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden lg:flex items-center">
               {user ? (
-                <div className="flex items-center gap-5 xl:gap-7">
+                <div className="flex items-center gap-3 xl:gap-5">
                   <div className="flex items-center gap-1 xl:gap-2">
                     <Link to="/dashboard" className={getDesktopNavLinkClass('/dashboard')}>
                       Dashboard
@@ -148,14 +148,14 @@ const Navbar = () => {
                     </button>
                   </div>
 
-                  <div className="flex items-center h-10 gap-3">
-                    <span className="text-xs xl:text-sm text-gray-600 hidden xl:block leading-none">
+                  <div className="flex items-center h-10 gap-3 ml-2">
+                    <span className="text-xs xl:text-sm text-gray-600 hidden xl:block leading-none max-w-[120px] truncate navbar-user-info">
                       {user.name} ({user.role})
                     </span>
                     
                     <button
                       onClick={handleLogout}
-                      className="inline-flex h-10 items-center bg-accent text-white px-4 xl:px-5 rounded-lg text-sm font-medium touch-target transition-all duration-200 hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
+                      className="inline-flex h-10 items-center bg-accent text-white px-3 lg:px-4 xl:px-5 rounded-lg text-sm font-medium touch-target transition-all duration-200 hover:bg-gray-800 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0"
                     >
                       Logout
                     </button>
@@ -164,17 +164,17 @@ const Navbar = () => {
               ) : (
                 <>
                   {isLanding && (
-                    <>
-                      <button onClick={() => scrollToSection('features')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
+                    <div className="flex items-center gap-1 mr-4">
+                      <button onClick={() => scrollToSection('features')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target rounded-lg hover:bg-gray-50">
                         Features
                       </button>
-                      <button onClick={() => scrollToSection('how-it-works')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
+                      <button onClick={() => scrollToSection('how-it-works')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target rounded-lg hover:bg-gray-50">
                         How It Works
                       </button>
-                      <button onClick={() => scrollToSection('ai-powered')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target">
+                      <button onClick={() => scrollToSection('ai-powered')} className="text-gray-700 hover:text-accent transition-colors px-3 py-2 text-sm font-medium touch-target rounded-lg hover:bg-gray-50">
                         AI Technology
                       </button>
-                    </>
+                    </div>
                   )}
                   
                   {/* Auth Buttons Container */}
@@ -216,12 +216,13 @@ const Navbar = () => {
 
           {/* Mobile Menu */}
           {mobileMenuOpen && (
-            <div className="lg:hidden border-t border-gray-200/50 bg-white/90 backdrop-blur-xl rounded-b-xl sm:rounded-b-2xl">
-              <div className="px-4 py-3 space-y-1">
+            <div className="lg:hidden border-t border-gray-200/50 bg-white/95 backdrop-blur-xl rounded-b-xl sm:rounded-b-2xl shadow-lg">
+              <div className="px-4 py-4 space-y-2 max-h-[70vh] overflow-y-auto">
                 {user ? (
                   <>
-                    <div className="px-3 py-2 text-sm text-gray-600 border-b border-gray-200 mb-2">
-                      {user.name} ({user.role})
+                    <div className="px-3 py-3 text-sm text-gray-600 border-b border-gray-200 mb-3 bg-gray-50 rounded-lg">
+                      <div className="font-medium text-gray-800">{user.name}</div>
+                      <div className="text-xs text-gray-500">({user.role})</div>
                     </div>
                     
                     <Link 
@@ -291,18 +292,20 @@ const Navbar = () => {
                     >
                       <span>Invitations</span>
                       {invitations.length > 0 && (
-                        <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                        <span className="bg-red-500 text-white text-xs rounded-full h-6 w-6 flex items-center justify-center font-bold">
                           {invitations.length}
                         </span>
                       )}
                     </button>
                     
-                    <button
-                      onClick={handleLogout}
-                      className="mobile-nav-item bg-accent text-white hover:bg-gray-800 transition-colors rounded-lg font-medium"
-                    >
-                      Logout
-                    </button>
+                    <div className="pt-2 border-t border-gray-200 mt-3">
+                      <button
+                        onClick={handleLogout}
+                        className="mobile-nav-item bg-accent text-white hover:bg-gray-800 transition-colors rounded-lg font-medium w-full text-center"
+                      >
+                        Logout
+                      </button>
+                    </div>
                   </>
                 ) : (
                   <>
@@ -310,22 +313,23 @@ const Navbar = () => {
                       <>
                         <button 
                           onClick={() => scrollToSection('features')} 
-                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg w-full text-left"
                         >
                           Features
                         </button>
                         <button 
                           onClick={() => scrollToSection('how-it-works')} 
-                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg w-full text-left"
                         >
                           How It Works
                         </button>
                         <button 
                           onClick={() => scrollToSection('ai-powered')} 
-                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg"
+                          className="mobile-nav-item text-gray-700 hover:text-accent hover:bg-gray-50 transition-colors rounded-lg w-full text-left"
                         >
                           AI Technology
                         </button>
+                        <div className="border-t border-gray-200 my-3"></div>
                       </>
                     )}
                     <Link 
@@ -337,7 +341,7 @@ const Navbar = () => {
                     </Link>
                     <Link 
                       to="/register" 
-                      className="mobile-nav-item bg-accent text-white hover:bg-gray-800 transition-colors rounded-lg font-medium"
+                      className="mobile-nav-item bg-accent text-white hover:bg-gray-800 transition-colors rounded-lg font-medium text-center"
                       onClick={closeMobileMenu}
                     >
                       Start Free

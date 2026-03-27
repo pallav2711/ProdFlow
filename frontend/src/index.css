@@ -70,13 +70,17 @@ html {
 }
 
 /* Mobile navigation improvements */
-@media (max-width: 768px) {
+@media (max-width: 1023px) {
   .mobile-nav-item {
     display: block;
     width: 100%;
     text-align: left;
-    padding: 0.75rem 1rem;
+    padding: 0.875rem 1rem;
     font-size: 1rem;
+    font-weight: 500;
+    border: none;
+    background: none;
+    cursor: pointer;
   }
 
   .mobile-card {
@@ -95,6 +99,25 @@ html {
     padding-top: 1rem;
     padding-bottom: 1rem;
     font-size: 1rem;
+  }
+}
+
+/* Navbar responsive improvements */
+@media (max-width: 1279px) {
+  /* Adjust navbar spacing for smaller desktop screens */
+  .navbar-desktop-spacing {
+    gap: 0.5rem;
+  }
+}
+
+@media (max-width: 1023px) {
+  /* Mobile navbar improvements */
+  .navbar-mobile-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    z-index: 50;
   }
 }
 
@@ -119,5 +142,35 @@ html {
   button, .cursor-pointer {
     min-height: 44px;
     min-width: 44px;
+  }
+}
+
+/* Hero section responsive improvements */
+@media (max-width: 640px) {
+  .hero-section {
+    min-height: 100vh;
+    padding-top: 6rem;
+    padding-bottom: 4rem;
+  }
+}
+
+@media (min-width: 641px) and (max-width: 1023px) {
+  .hero-section {
+    min-height: 90vh;
+    padding-top: 8rem;
+    padding-bottom: 6rem;
+  }
+}
+
+/* Navbar overflow handling */
+@media (max-width: 1279px) {
+  .navbar-user-info {
+    max-width: 100px;
+  }
+}
+
+@media (max-width: 1023px) {
+  .navbar-user-info {
+    display: none;
   }
 }
