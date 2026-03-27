@@ -30,12 +30,27 @@ export default {
         '18': '4.5rem',
         '88': '22rem',
         '128': '32rem',
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
+      minHeight: {
+        'screen-safe': 'calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom))',
+      },
+      maxWidth: {
+        'screen-xs': '475px',
+        'screen-sm': '640px',
+        'screen-md': '768px',
+        'screen-lg': '1024px',
+        'screen-xl': '1280px',
       },
       animation: {
         'fade-in': 'fadeIn 0.6s ease-in-out',
         'slide-up': 'slideUp 0.6s ease-out',
         'float': 'float 3s ease-in-out infinite',
         'blob': 'blob 7s infinite',
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         fadeIn: {
@@ -58,6 +73,17 @@ export default {
             transform: 'translate(30px, -50px) scale(1.1)',
           },
           '66%': {
+            transform: 'translate(-20px, 20px) scale(1)',
+          },
+          '100%': {
+            transform: 'translate(0px, 0px) scale(1)',
+          },
+        },
+      },
+    },
+  },
+  plugins: [],
+}
             transform: 'translate(-20px, 20px) scale(0.9)',
           },
           '100%': {
