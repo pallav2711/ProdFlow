@@ -156,11 +156,10 @@ const Dashboard = () => {
   // Team Lead Dashboard - Show Sprint Overview (No Personal Tasks)
   if (user.role === 'Team Lead') {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pt-20 sm:pt-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
         <PageHeader
           title={`Welcome back, ${user.name}!`}
           subtitle="Team Lead Dashboard - Sprint Overview"
-          className="mb-6 sm:mb-8"
           rightContent={
             isDataStale ? (
               <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
@@ -170,7 +169,7 @@ const Dashboard = () => {
           }
         />
           {error && (
-            <div className="mb-6 sm:mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center gap-2">
                 <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -187,58 +186,58 @@ const Dashboard = () => {
             </div>
           )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-responsive-stats gap-responsive-sm mb-6 sm:mb-8">
-          <div className="bg-white spacing-responsive-sm rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow desktop-hover">
+        {/* Stats Cards — aligned with Product Manager dashboard */}
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-gray-600 text-responsive-xs font-medium mb-1 truncate">Total Products</h3>
-                <p className="text-responsive-2xl font-bold text-gray-900">{stats.products}</p>
+              <div>
+                <h3 className="text-gray-600 text-sm font-medium mb-1">Total Products</h3>
+                <p className="text-3xl font-bold text-gray-900">{stats.products}</p>
               </div>
-              <div className="bg-purple-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <svg className="icon-responsive text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-purple-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white spacing-responsive-sm rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow desktop-hover">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-gray-600 text-responsive-xs font-medium mb-1 truncate">Total Sprints</h3>
-                <p className="text-responsive-2xl font-bold text-gray-900">{stats.sprints}</p>
+              <div>
+                <h3 className="text-gray-600 text-sm font-medium mb-1">Total Sprints</h3>
+                <p className="text-3xl font-bold text-gray-900">{stats.sprints}</p>
               </div>
-              <div className="bg-gray-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <svg className="icon-responsive text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-gray-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white spacing-responsive-sm rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow desktop-hover">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-gray-600 text-responsive-xs font-medium mb-1 truncate">Active Sprints</h3>
-                <p className="text-responsive-2xl font-bold text-blue-600">{stats.activeSprints}</p>
+              <div>
+                <h3 className="text-gray-600 text-sm font-medium mb-1">Active Sprints</h3>
+                <p className="text-3xl font-bold text-blue-600">{stats.activeSprints}</p>
               </div>
-              <div className="bg-blue-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <svg className="icon-responsive text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-blue-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white spacing-responsive-sm rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow desktop-hover">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-gray-600 text-responsive-xs font-medium mb-1 truncate">Completed Sprints</h3>
-                <p className="text-responsive-2xl font-bold text-emerald-600">{stats.completedSprints}</p>
+              <div>
+                <h3 className="text-gray-600 text-sm font-medium mb-1">Completed Sprints</h3>
+                <p className="text-3xl font-bold text-emerald-600">{stats.completedSprints}</p>
               </div>
-              <div className="bg-emerald-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <svg className="icon-responsive text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-emerald-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                 </svg>
               </div>
@@ -247,13 +246,13 @@ const Dashboard = () => {
         </div>
 
         {/* Sprints Overview */}
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm mobile-card">
-          <div className="border-b border-gray-200 px-4 sm:px-6 py-4">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Sprints Overview</h2>
-            <p className="text-xs sm:text-sm text-gray-600 mt-1">View all sprints with features and team assignments</p>
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+          <div className="border-b border-gray-200 px-6 py-4">
+            <h2 className="text-xl font-bold text-gray-900">Sprints Overview</h2>
+            <p className="text-sm text-gray-600 mt-1">View all sprints with features and team assignments</p>
           </div>
 
-          <div className="p-4 sm:p-6">
+          <div className="p-6">
             {loading ? (
               <div className="text-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
@@ -630,11 +629,10 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pt-20 sm:pt-24">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
       <PageHeader
         title={`Welcome back, ${user.name}!`}
         subtitle="Here's what's happening with your projects"
-        className="mb-6 sm:mb-8"
         rightContent={
           isDataStale ? (
             <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded-full">
@@ -644,7 +642,7 @@ const Dashboard = () => {
         }
       />
         {error && (
-          <div className="mb-6 sm:mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center gap-2">
               <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -661,60 +659,60 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-responsive-stats gap-responsive-sm mb-6 sm:mb-8">
-          <div className="bg-white spacing-responsive-sm rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow desktop-hover">
+        {/* Stats Cards — aligned with Product Manager dashboard */}
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-gray-600 text-responsive-xs font-medium mb-1 truncate">My Tasks</h3>
-                <p className="text-responsive-2xl font-bold text-gray-900">{stats.myTasks}</p>
+              <div>
+                <h3 className="text-gray-600 text-sm font-medium mb-1">My Tasks</h3>
+                <p className="text-3xl font-bold text-gray-900">{stats.myTasks}</p>
               </div>
-              <div className="bg-indigo-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <svg className="icon-responsive text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-indigo-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white spacing-responsive-sm rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow desktop-hover">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-gray-600 text-responsive-xs font-medium mb-1 truncate">Completed Tasks</h3>
-                <p className="text-responsive-2xl font-bold text-green-600">{stats.completedTasks}</p>
+              <div>
+                <h3 className="text-gray-600 text-sm font-medium mb-1">Completed Tasks</h3>
+                <p className="text-3xl font-bold text-green-600">{stats.completedTasks}</p>
               </div>
-              <div className="bg-green-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <svg className="icon-responsive text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-green-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white spacing-responsive-sm rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow desktop-hover">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-gray-600 text-responsive-xs font-medium mb-1 truncate">Active Sprints</h3>
-                <p className="text-responsive-2xl font-bold text-blue-600">{stats.activeSprints}</p>
-                <p className="text-responsive-xs text-gray-500 mt-1 truncate">of {stats.sprints} total</p>
+              <div>
+                <h3 className="text-gray-600 text-sm font-medium mb-1">Active Sprints</h3>
+                <p className="text-3xl font-bold text-blue-600">{stats.activeSprints}</p>
+                <p className="text-xs text-gray-500 mt-1">of {stats.sprints} total</p>
               </div>
-              <div className="bg-blue-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <svg className="icon-responsive text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-blue-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="bg-white spacing-responsive-sm rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow desktop-hover">
+          <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-gray-600 text-responsive-xs font-medium mb-1 truncate">Completed Sprints</h3>
-                <p className="text-responsive-2xl font-bold text-emerald-600">{stats.completedSprints}</p>
-                <p className="text-responsive-xs text-gray-500 mt-1 truncate">All tasks done</p>
+              <div>
+                <h3 className="text-gray-600 text-sm font-medium mb-1">Completed Sprints</h3>
+                <p className="text-3xl font-bold text-emerald-600">{stats.completedSprints}</p>
+                <p className="text-xs text-gray-500 mt-1">All tasks done</p>
               </div>
-              <div className="bg-emerald-100 p-2 sm:p-3 rounded-lg flex-shrink-0">
-                <svg className="icon-responsive text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="bg-emerald-100 p-3 rounded-lg">
+                <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                 </svg>
               </div>
@@ -723,26 +721,30 @@ const Dashboard = () => {
         </div>
 
       {/* Tasks Section */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-6 sm:mb-8 mobile-card">
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm mb-8">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-xl font-bold text-gray-900">Tasks</h2>
+          <p className="text-sm text-gray-600 mt-1">Switch between your work and the full team backlog</p>
+        </div>
         {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <div className="flex overflow-x-auto">
+        <div className="border-b border-gray-200 px-6">
+          <div className="flex overflow-x-auto -mb-px gap-1">
             <button
               onClick={() => setActiveTab('myTasks')}
-              className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-colors whitespace-nowrap touch-target ${
+              className={`px-4 py-3 text-sm font-semibold transition-colors whitespace-nowrap border-b-2 -mb-px touch-target ${
                 activeTab === 'myTasks'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
               My Tasks ({myTasks.length})
             </button>
             <button
               onClick={() => setActiveTab('allTasks')}
-              className={`px-4 sm:px-6 py-3 sm:py-4 font-semibold transition-colors whitespace-nowrap touch-target ${
+              className={`px-4 py-3 text-sm font-semibold transition-colors whitespace-nowrap border-b-2 -mb-px touch-target ${
                 activeTab === 'allTasks'
-                  ? 'border-b-2 border-indigo-600 text-indigo-600'
-                  : 'text-gray-600 hover:text-gray-900'
+                  ? 'border-indigo-600 text-indigo-600'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
               All Team Tasks ({allTasks.length})
@@ -751,13 +753,13 @@ const Dashboard = () => {
         </div>
 
         {/* Filters */}
-        <div className="spacing-responsive-xs bg-gray-50 border-b border-gray-200">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-responsive-sm">
-            <span className="text-responsive-xs font-medium text-gray-700">Filter by status:</span>
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <span className="text-sm font-medium text-gray-700 shrink-0">Filter by status:</span>
             <div className="flex flex-wrap gap-2">
               <button
                 onClick={() => setFilterStatus('all')}
-                className={`btn-responsive-sm rounded-lg text-responsive-xs font-medium transition-colors touch-target ${
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors touch-target ${
                   filterStatus === 'all'
                     ? 'bg-indigo-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -767,7 +769,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setFilterStatus('To Do')}
-                className={`btn-responsive-sm rounded-lg text-responsive-xs font-medium transition-colors touch-target ${
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors touch-target ${
                   filterStatus === 'To Do'
                     ? 'bg-gray-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -777,7 +779,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setFilterStatus('In Progress')}
-                className={`btn-responsive-sm rounded-lg text-responsive-xs font-medium transition-colors touch-target ${
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors touch-target ${
                   filterStatus === 'In Progress'
                     ? 'bg-blue-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -787,7 +789,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setFilterStatus('Completed')}
-                className={`btn-responsive-sm rounded-lg text-responsive-xs font-medium transition-colors touch-target ${
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors touch-target ${
                   filterStatus === 'Completed'
                     ? 'bg-green-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -797,7 +799,7 @@ const Dashboard = () => {
               </button>
               <button
                 onClick={() => setFilterStatus('Blocked')}
-                className={`btn-responsive-sm rounded-lg text-responsive-xs font-medium transition-colors touch-target ${
+                className={`px-3 py-2 rounded-lg text-xs font-medium transition-colors touch-target ${
                   filterStatus === 'Blocked'
                     ? 'bg-red-600 text-white'
                     : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
@@ -810,7 +812,7 @@ const Dashboard = () => {
         </div>
 
         {/* Tasks List */}
-        <div className="p-4 sm:p-6">
+        <div className="p-6">
           {activeTab === 'myTasks' ? (
             filteredTasks(myTasks).length === 0 ? (
               <div className="text-center py-12">
@@ -823,68 +825,68 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-4">
                 {filteredTasks(myTasks).map((task) => (
-                  <div key={task._id} className="border border-gray-200 rounded-xl spacing-responsive-sm hover:shadow-md transition-shadow desktop-hover mobile-card">
-                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between mb-3 gap-3">
+                  <div key={task._id} className="border border-gray-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-shadow bg-white">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-2">
-                          <h3 className="font-bold text-responsive-base text-gray-900 truncate-responsive">{task.title}</h3>
+                          <h3 className="font-bold text-base text-gray-900">{task.title}</h3>
                           {task.workType && (
-                            <span className={`px-2 py-1 rounded-full text-responsive-xs font-medium ${getWorkTypeColor(task.workType)} flex-shrink-0`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getWorkTypeColor(task.workType)} flex-shrink-0`}>
                               {getWorkTypeIcon(task.workType)} {task.workType}
                             </span>
                           )}
-                          <span className={`px-2 py-1 rounded-full text-responsive-xs font-medium ${getStatusColor(task.status)} flex-shrink-0`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)} flex-shrink-0`}>
                             {getStatusIcon(task.status)} {task.status}
                           </span>
                         </div>
-                        <p className="text-gray-600 text-responsive-sm mb-2 line-clamp-2">{task.description}</p>
-                        <div className="flex flex-wrap items-center gap-responsive-sm text-responsive-xs text-gray-500">
+                        <p className="text-gray-600 text-sm mb-2 line-clamp-2">{task.description}</p>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
                           <span className="flex items-center gap-1 flex-shrink-0">
-                            <svg className="icon-responsive-sm" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                             </svg>
                             {task.estimatedHours}h estimated
                           </span>
-                          <span className="flex items-center gap-1 flex-shrink-0">
-                            <svg className="icon-responsive-sm" fill="currentColor" viewBox="0 0 20 20">
+                          <span className="flex items-center gap-1 flex-shrink-0 min-w-0">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                             </svg>
                             <span className="truncate">{task.feature?.name || 'No feature'}</span>
                           </span>
                         </div>
                         {task.reviewNotes && (
-                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-responsive-xs">
-                            <p className="font-medium text-yellow-800">Review Notes:</p>
-                            <p className="text-yellow-700 line-clamp-2">{task.reviewNotes}</p>
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs">
+                            <p className="font-semibold text-yellow-800">Review Notes</p>
+                            <p className="text-yellow-700 line-clamp-2 mt-0.5">{task.reviewNotes}</p>
                             {task.reviewedBy && (
-                              <p className="text-yellow-600 mt-1 truncate">- {task.reviewedBy.name}</p>
+                              <p className="text-yellow-600 mt-1 truncate">— {task.reviewedBy.name}</p>
                             )}
                           </div>
                         )}
                       </div>
-                      <div className="lg:ml-4 w-full lg:w-auto lg:min-w-0 lg:max-w-xs">
+                      <div className="w-full lg:w-56 lg:max-w-xs shrink-0">
                         {user.role === 'Developer' ? (
                           <div className="space-y-2">
-                            <label className="block text-responsive-xs font-medium text-gray-700">Update Status</label>
+                            <label className="block text-xs font-medium text-gray-700">Update Status</label>
                             <select
                               value={task.status}
                               onChange={(e) => handleStatusChange(task._id, e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-responsive-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent touch-target"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-target"
                             >
                               <option value="To Do">To Do</option>
                               <option value="In Progress">In Progress</option>
                               <option value="Pending Review">Submit for Review</option>
                               <option value="Blocked">Blocked</option>
                             </select>
-                            <p className="text-responsive-xs text-gray-500">Submit for review when done</p>
+                            <p className="text-xs text-gray-500">Submit for review when done</p>
                           </div>
                         ) : (
                           <div className="space-y-2">
-                            <label className="block text-responsive-xs font-medium text-gray-700">Update Status</label>
+                            <label className="block text-xs font-medium text-gray-700">Update Status</label>
                             <select
                               value={task.status}
                               onChange={(e) => handleStatusChange(task._id, e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-responsive-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent touch-target"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 touch-target"
                             >
                               <option value="To Do">To Do</option>
                               <option value="In Progress">In Progress</option>
@@ -912,58 +914,58 @@ const Dashboard = () => {
             ) : (
               <div className="space-y-4">
                 {filteredTasks(allTasks).map((task) => (
-                  <div key={task._id} className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                          <h3 className="font-bold text-lg text-gray-900">{task.title}</h3>
+                  <div key={task._id} className="border border-gray-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-shadow bg-gray-50">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          <h3 className="font-bold text-base text-gray-900">{task.title}</h3>
                           {task.workType && (
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getWorkTypeColor(task.workType)}`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getWorkTypeColor(task.workType)} flex-shrink-0`}>
                               {getWorkTypeIcon(task.workType)} {task.workType}
                             </span>
                           )}
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)} flex-shrink-0`}>
                             {getStatusIcon(task.status)} {task.status}
                           </span>
                         </div>
-                        <p className="text-gray-600 text-sm mb-2">{task.description}</p>
-                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                          <span className="flex items-center gap-1">
+                        <p className="text-gray-600 text-sm mb-2 line-clamp-2">{task.description}</p>
+                        <div className="flex flex-wrap items-center gap-3 text-xs text-gray-500">
+                          <span className="flex items-center gap-1 flex-shrink-0">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
                             </svg>
                             {task.estimatedHours}h estimated
                           </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <span className="flex items-center gap-1 min-w-0">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9 6a3 3 0 11-6 0 3 3 0 016 0zM17 6a3 3 0 11-6 0 3 3 0 016 0zM12.93 17c.046-.327.07-.66.07-1a6.97 6.97 0 00-1.5-4.33A5 5 0 0119 16v1h-6.07zM6 11a5 5 0 015 5v1H1v-1a5 5 0 015-5z" />
                             </svg>
-                            Assigned to: {task.assignedTo?.name || 'Unassigned'}
+                            <span className="truncate">Assigned to: {task.assignedTo?.name || 'Unassigned'}</span>
                           </span>
-                          <span className="flex items-center gap-1">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                          <span className="flex items-center gap-1 min-w-0">
+                            <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                               <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
                             </svg>
-                            {task.feature?.name || 'No feature'}
+                            <span className="truncate">{task.feature?.name || 'No feature'}</span>
                           </span>
                         </div>
                         {task.reviewNotes && (
-                          <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-xs">
-                            <p className="font-medium text-yellow-800">Review Notes:</p>
-                            <p className="text-yellow-700">{task.reviewNotes}</p>
+                          <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs">
+                            <p className="font-semibold text-yellow-800">Review Notes</p>
+                            <p className="text-yellow-700 line-clamp-3 mt-0.5">{task.reviewNotes}</p>
                             {task.reviewedBy && (
-                              <p className="text-yellow-600 mt-1">- {task.reviewedBy.name}</p>
+                              <p className="text-yellow-600 mt-1">— {task.reviewedBy.name}</p>
                             )}
                           </div>
                         )}
                       </div>
-                      <div className="ml-4">
+                      <div className="w-full sm:w-auto lg:min-w-[140px] shrink-0">
                         {(user.role === 'Team Lead' || user.role === 'Product Manager') && task.status === 'Pending Review' ? (
-                          <div className="flex flex-col gap-2">
+                          <div className="flex flex-col sm:flex-row lg:flex-col gap-2">
                             <button
                               onClick={() => handleApproveTask(task._id)}
-                              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-1"
+                              className="w-full sm:w-auto px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center justify-center gap-1 touch-target"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -975,7 +977,7 @@ const Dashboard = () => {
                                 setRejectModalTaskId(task._id)
                                 setReviewNotesInput('')
                               }}
-                              className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-1"
+                              className="w-full sm:w-auto px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center justify-center gap-1 touch-target"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -984,9 +986,11 @@ const Dashboard = () => {
                             </button>
                           </div>
                         ) : (
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
-                            {getStatusIcon(task.status)} {task.status}
-                          </span>
+                          <div className="flex justify-end lg:justify-start">
+                            <span className={`inline-flex px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(task.status)}`}>
+                              {getStatusIcon(task.status)} {task.status}
+                            </span>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -999,38 +1003,43 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Sprints */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6 mobile-card">
-        <h2 className="text-lg sm:text-xl font-bold mb-4">Recent Sprints</h2>
-        {sprints.length === 0 ? (
-          <p className="text-gray-600">No sprints created yet</p>
-        ) : (
-          <div className="space-y-4">
-            {sprints.slice(0, 5).map((sprint) => (
-              <div key={sprint._id} className="border-b border-gray-200 pb-4 last:border-0">
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
-                  <div className="flex-1">
-                    <h3 className="font-bold text-base sm:text-lg">{sprint.name}</h3>
-                    <p className="text-sm text-gray-600 mobile-text">
-                      {sprint.product?.name} • {sprint.duration} days • Team: {sprint.teamSize}
-                    </p>
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <h2 className="text-xl font-bold text-gray-900">Recent Sprints</h2>
+          <p className="text-sm text-gray-600 mt-1">Latest activity across your products</p>
+        </div>
+        <div className="p-6">
+          {sprints.length === 0 ? (
+            <p className="text-sm text-gray-600">No sprints created yet</p>
+          ) : (
+            <div className="space-y-4">
+              {sprints.slice(0, 5).map((sprint) => (
+                <div key={sprint._id} className="border border-gray-200 rounded-lg p-4 bg-gray-50 last:mb-0">
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-base text-gray-900">{sprint.name}</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {sprint.product?.name} • {sprint.duration} days • Team: {sprint.teamSize}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {rejectModalTaskId && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-[60]">
-          <div className="bg-white rounded-xl shadow-xl modal-responsive spacing-responsive-sm">
-            <h3 className="text-responsive-lg font-bold text-gray-900">Reject Task</h3>
-            <p className="text-responsive-sm text-gray-600 mt-1">Provide feedback for the developer.</p>
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full p-6">
+            <h3 className="text-lg font-bold text-gray-900">Reject Task</h3>
+            <p className="text-sm text-gray-600 mt-1">Provide feedback for the developer.</p>
             <textarea
               value={reviewNotesInput}
               onChange={(e) => setReviewNotesInput(e.target.value)}
               rows={4}
-              className="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-responsive-sm touch-target"
+              className="w-full mt-3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm touch-target"
               placeholder="Add clear feedback..."
             />
             <div className="mt-4 flex flex-col sm:flex-row justify-end gap-2">
@@ -1039,13 +1048,13 @@ const Dashboard = () => {
                   setRejectModalTaskId(null)
                   setReviewNotesInput('')
                 }}
-                className="btn-responsive text-responsive-sm rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 touch-target"
+                className="px-4 py-2.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm touch-target"
               >
                 Cancel
               </button>
               <button
                 onClick={handleRejectTask}
-                className="btn-responsive text-responsive-sm rounded-lg bg-red-600 text-white hover:bg-red-700 touch-target"
+                className="px-4 py-2.5 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm touch-target"
               >
                 Reject Task
               </button>
