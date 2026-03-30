@@ -11,7 +11,7 @@ const sendSuccess = require('../utils/successResponse');
 // Generate JWT access token (short-lived)
 const generateAccessToken = (id, rememberMe = false) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: rememberMe ? '15m' : '5m' // Shorter expiration for session-only logins
+    expiresIn: rememberMe ? '15m' : '30m' // Longer expiration to prevent frequent 401s during idle time
   });
 };
 

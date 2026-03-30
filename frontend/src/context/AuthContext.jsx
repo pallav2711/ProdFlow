@@ -116,7 +116,8 @@ export const AuthProvider = ({ children }) => {
       clearInterval(refreshInterval)
     }
     
-    // Set up automatic token refresh every 10 minutes (access token expires in 15 minutes)
+    // Set up automatic token refresh every 12 minutes (access token expires in 15 minutes)
+    // This gives us a 3-minute buffer before expiration
     refreshInterval = setInterval(async () => {
       try {
         await refreshAccessToken()
@@ -124,7 +125,7 @@ export const AuthProvider = ({ children }) => {
         console.error('Auto refresh failed:', error)
         logout()
       }
-    }, 10 * 60 * 1000) // 10 minutes
+    }, 12 * 60 * 1000) // 12 minutes
   }
 
   const refreshAccessToken = async () => {
@@ -245,13 +246,25 @@ export const AuthProvider = ({ children }) => {
         if (error.response?.status === 401 && !originalRequest._retry) {
           originalRequest._retry = true
           
-          try {
-            await refreshAccessToken()
-            // Retry the original request with new token
-            return api(originalRequest)
-          } catch (refreshError) {
+          const refreshToken = localStorage.getItem('refreshToken')
+          const isSessionOnly = !refreshToken
+          
+          // Only try to refresh if we have a refresh token (persistent login)
+          if (refreshToken) {
+            try {
+              await refreshAccessToken()
+              // Retry the original request with new token
+              return api(originalRequest)
+            } catch (refreshError) {
+              console.error('Token refresh failed in interceptor:', refreshError)
+              logout()
+              return Promise.reject(refreshError)
+            }
+          } else {
+            // For session-only logins, just logout when token expires
+            console.log('Session expired (no refresh token available)')
             logout()
-            return Promise.reject(refreshError)
+            return Promise.reject(error)
           }
         }
         
