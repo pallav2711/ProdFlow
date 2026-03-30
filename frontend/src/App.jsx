@@ -7,6 +7,7 @@ import Navbar from './components/Navbar'
 import ErrorBoundary from './components/ErrorBoundary'
 import { preloadCriticalData } from './api/config'
 import { ToastProvider } from './context/ToastContext'
+import { Analytics } from '@vercel/analytics/react'
 
 // Lazy load components for better performance
 const Landing = lazy(() => import('./pages/Landing'))
@@ -119,6 +120,7 @@ function App() {
           </DashboardProvider>
         </Router>
       </AuthProvider>
+      <Analytics />
     </ErrorBoundary>
   )
 }
