@@ -30,7 +30,12 @@ const validateRegister = [
   
   body('email')
     .isEmail()
-    .normalizeEmail()
+    // Avoid changing Gmail dots / sub-address vs what users typed when registering
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: false,
+      outlookdotcom_remove_subaddress: false
+    })
     .withMessage('Please provide a valid email'),
   
   body('password')
@@ -56,7 +61,12 @@ const validateRegister = [
 const validateLogin = [
   body('email')
     .isEmail()
-    .normalizeEmail()
+    // Avoid changing Gmail dots / sub-address vs what users typed when registering
+    .normalizeEmail({
+      gmail_remove_dots: false,
+      gmail_remove_subaddress: false,
+      outlookdotcom_remove_subaddress: false
+    })
     .withMessage('Please provide a valid email'),
   
   body('password')

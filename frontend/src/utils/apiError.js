@@ -47,3 +47,22 @@ export const getApiErrorMessage = (error, fallbackMessage = 'Something went wron
   const normalized = normalizeApiError(error);
   return normalized.message || fallbackMessage;
 };
+
+/**
+ * Axios is configured with validateStatus: status < 500, so 4xx responses resolve instead of throwing.
+ * Call this after auth (and similar) requests so failures surface to the UI correctly.
+ */
+export const assertApiSuccess = (res, fallbackMessage = 'Request failed') => {
+  if (res.status < 200 || res.status >= 300) {
+    const message = res.data?.message || fallbackMessage;
+    const err = new Error(message);
+    err.response = { status: res.status, data: res.data };
+    throw err;
+  }
+  if (res.data?.success === false) {
+    const message = res.data?.message || fallbackMessage;
+    const err = new Error(message);
+    err.response = { status: res.status, data: res.data };
+    throw err;
+  }
+};

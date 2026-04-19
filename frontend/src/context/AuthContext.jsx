@@ -1,6 +1,6 @@
 import { createContext, useState, useContext, useEffect } from 'react'
 import api from '../api/config'
-import { getApiErrorMessage } from '../utils/apiError'
+import { getApiErrorMessage, assertApiSuccess } from '../utils/apiError'
 
 const AuthContext = createContext()
 
@@ -106,6 +106,7 @@ export const AuthProvider = ({ children }) => {
 
   const loadUser = async () => {
     const res = await api.get('/auth/me')
+    assertApiSuccess(res, 'Not authenticated')
     setUser(res.data.user)
     return res.data.user
   }
@@ -137,8 +138,9 @@ export const AuthProvider = ({ children }) => {
     try {
       console.log('Attempting to refresh access token...')
       const res = await api.post('/auth/refresh', { refreshToken })
+      assertApiSuccess(res, 'Session expired. Please sign in again.')
       const { accessToken, user } = res.data
-      
+
       localStorage.setItem('accessToken', accessToken)
       api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`
       setUser(user)
@@ -179,6 +181,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password, rememberMe = false) => {
     try {
       const res = await api.post('/auth/login', { email, password, rememberMe })
+      assertApiSuccess(res, 'Invalid email or password')
       const { accessToken, refreshToken, user } = res.data
       
       console.log('Login successful', { hasAccessToken: !!accessToken, hasRefreshToken: !!refreshToken, rememberMe })
@@ -213,6 +216,7 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (name, email, password, role) => {
     const res = await api.post('/auth/register', { name, email, password, role })
+    assertApiSuccess(res, 'Registration failed')
     const { accessToken, refreshToken, user } = res.data
     
     // Default to session-only for new registrations (more secure)

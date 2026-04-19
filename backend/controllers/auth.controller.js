@@ -9,6 +9,16 @@ const crypto = require('crypto');
 const { validationError, unauthorizedError, conflictError } = require('../utils/errorFactory');
 const sendSuccess = require('../utils/successResponse');
 
+/** Case-insensitive exact email match (handles Compass/legacy rows with odd casing). */
+const emailMatchQuery = (email) => {
+  const trimmed = String(email || '').trim();
+  if (!trimmed) {
+    return null;
+  }
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`^${escaped}$`, 'i');
+};
+
 // Generate JWT access token (short-lived)
 const generateAccessToken = (id, rememberMe = false) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -33,8 +43,8 @@ exports.register = async (req, res, next) => {
   try {
     const { name, email, password, role } = req.body;
 
-    // Check if user exists
-    const userExists = await User.findOne({ email });
+    const emailQuery = emailMatchQuery(email);
+    const userExists = emailQuery ? await User.findOne({ email: emailQuery }) : null;
     if (userExists) {
       return next(conflictError('User already exists', 'USER_ALREADY_EXISTS'));
     }
@@ -91,8 +101,11 @@ exports.login = async (req, res, next) => {
       return next(validationError('Please provide email and password'));
     }
 
+    const emailQuery = emailMatchQuery(email);
     // Check for user (include password for comparison)
-    const user = await User.findOne({ email }).select('+password +refreshToken +refreshTokenExpiresAt');
+    const user = emailQuery
+      ? await User.findOne({ email: emailQuery }).select('+password +refreshToken +refreshTokenExpiresAt')
+      : null;
     if (!user) {
       return next(unauthorizedError('Invalid credentials', 'INVALID_CREDENTIALS'));
     }
