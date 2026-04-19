@@ -52,22 +52,12 @@ app.add_middleware(
 
 # Mount performance API routes
 try:
-    from performance_api import app as performance_app
-    from fastapi import APIRouter
-    import performance_api as _perf_module
-
-    # Copy routes from performance_app into main app
-    for route in performance_app.routes:
-        # Skip root and health — main app already has them
-        if hasattr(route, 'path') and route.path not in ('/', '/health', '/ping', '/docs', '/redoc', '/openapi.json'):
-            app.routes.append(route)
-
-    # Share the startup event so performance_service gets initialized
-    app.router.on_startup.extend(performance_app.router.on_startup)
-
+    from performance_api import router as performance_router, init_performance_service
+    app.include_router(performance_router)
     print("✅ Performance API routes mounted successfully")
 except Exception as e:
     print(f"⚠️  Performance API not available: {e}")
+    init_performance_service = None
 
 # Cache for predictions to reduce computation
 prediction_cache = {}
@@ -271,6 +261,13 @@ async def startup_event():
     data_str = json.dumps(sample_data, sort_keys=True)
     validate_sprint_data(data_str)
     calculate_heuristic_prediction(data_str)
+
+    # Initialize performance analysis service
+    if init_performance_service:
+        try:
+            await init_performance_service()
+        except Exception as e:
+            print(f"⚠️  Performance service init failed: {e}")
     
     print("✅ AI service warmed up and ready!")
 
