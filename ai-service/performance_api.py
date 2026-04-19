@@ -87,8 +87,9 @@ async def get_manager_insights(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
     except Exception as e:
+        import traceback
         logger.error(f"Manager dashboard error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=traceback.format_exc())
 
 
 @router.post("/ai/analyze", response_model=ManagerDashboardResponse)

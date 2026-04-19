@@ -172,7 +172,7 @@ class TeamLeadMetricsCalculator:
             # Calculate capacity vs workload
             total_estimated = sprint_tasks['estimated_hours'].sum()
             sprint_duration = sprint['duration']
-            developer_count = sprint.get('developer_count', 5)
+            developer_count = sprint['developer_count'] if 'developer_count' in sprint.index else 5
             
             # Assume 6 productive hours per developer per day
             available_capacity = sprint_duration * developer_count * 6
@@ -214,11 +214,19 @@ class TeamLeadMetricsCalculator:
             return 50.0, 0.0
         
         # Calculate review response times
-        reviews['response_time_hours'] = (
-            reviews['review_time'] - reviews['submission_time']
+        valid_reviews = reviews.copy()
+        valid_reviews['review_time'] = pd.to_datetime(valid_reviews['review_time'], errors='coerce')
+        valid_reviews['submission_time'] = pd.to_datetime(valid_reviews['submission_time'], errors='coerce')
+        valid_reviews = valid_reviews.dropna(subset=['review_time', 'submission_time'])
+
+        if valid_reviews.empty:
+            return 50.0, 0.0
+
+        valid_reviews['response_time_hours'] = (
+            valid_reviews['review_time'] - valid_reviews['submission_time']
         ).dt.total_seconds() / 3600
         
-        avg_response_time = reviews['response_time_hours'].mean()
+        avg_response_time = valid_reviews['response_time_hours'].mean()
         
         # Score based on response time
         # < 4 hours = 100 points
@@ -367,7 +375,7 @@ class TeamLeadMetricsCalculator:
             
             total_estimated = sprint_tasks['estimated_hours'].sum()
             sprint_duration = sprint['duration']
-            developer_count = sprint.get('developer_count', 5)
+            developer_count = sprint['developer_count'] if 'developer_count' in sprint.index else 5
             
             available_capacity = sprint_duration * developer_count * 8
             utilization = total_estimated / available_capacity if available_capacity > 0 else 0
