@@ -29,6 +29,22 @@ service_start_time = time.time()
 router = APIRouter()
 
 
+def _get_performance_service() -> PerformanceAnalysisService:
+    if performance_service is None:
+        raise HTTPException(
+            status_code=503,
+            detail="Performance analysis is temporarily unavailable.",
+        )
+    return performance_service
+
+
+def _internal_error_message(exc: Exception) -> str:
+    """Avoid leaking stack traces or internal paths to API clients."""
+    if settings.ENVIRONMENT.lower() == "production":
+        return "An internal error occurred while processing this request."
+    return str(exc)
+
+
 async def init_performance_service():
     """Initialize the performance service — called from main app startup."""
     global performance_service
@@ -45,15 +61,18 @@ async def get_developer_performance(
     developer_ids: Optional[str] = Query(None)
 ):
     try:
+        svc = _get_performance_service()
         start_dt = datetime.fromisoformat(start_date) if start_date else None
         end_dt = datetime.fromisoformat(end_date) if end_date else None
         dev_ids = developer_ids.split(',') if developer_ids else None
-        return await performance_service.analyze_developer_performance(start_dt, end_dt, dev_ids)
+        return await svc.analyze_developer_performance(start_dt, end_dt, dev_ids)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Developer performance error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Developer performance error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=_internal_error_message(e))
 
 
 @router.get("/ai/teamlead-performance", response_model=TeamLeadPerformanceResponse)
@@ -63,15 +82,18 @@ async def get_teamlead_performance(
     team_lead_ids: Optional[str] = Query(None)
 ):
     try:
+        svc = _get_performance_service()
         start_dt = datetime.fromisoformat(start_date) if start_date else None
         end_dt = datetime.fromisoformat(end_date) if end_date else None
         tl_ids = team_lead_ids.split(',') if team_lead_ids else None
-        return await performance_service.analyze_teamlead_performance(start_dt, end_dt, tl_ids)
+        return await svc.analyze_teamlead_performance(start_dt, end_dt, tl_ids)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Team lead performance error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Team lead performance error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=_internal_error_message(e))
 
 
 @router.get("/ai/manager-insights", response_model=ManagerDashboardResponse)
@@ -81,44 +103,65 @@ async def get_manager_insights(
     include_predictions: bool = Query(True)
 ):
     try:
+        svc = _get_performance_service()
         start_dt = datetime.fromisoformat(start_date) if start_date else None
         end_dt = datetime.fromisoformat(end_date) if end_date else None
-        return await performance_service.generate_manager_dashboard(start_dt, end_dt, include_predictions)
+        return await svc.generate_manager_dashboard(start_dt, end_dt, include_predictions)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
+    except HTTPException:
+        raise
     except Exception as e:
-        import traceback
         logger.error(f"Manager dashboard error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=traceback.format_exc())
+        raise HTTPException(status_code=500, detail=_internal_error_message(e))
 
 
 @router.post("/ai/analyze", response_model=ManagerDashboardResponse)
 async def analyze_performance(request: AnalysisRequest):
     try:
-        return await performance_service.generate_manager_dashboard(
+        svc = _get_performance_service()
+        return await svc.generate_manager_dashboard(
             request.start_date, request.end_date, request.include_predictions
         )
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Performance analysis error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Performance analysis error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=_internal_error_message(e))
 
 
 @router.get("/ai/metrics/summary")
 async def get_metrics_summary():
     try:
-        sprint_df = await performance_service.data_loader.load_sprint_data()
-        task_df = await performance_service.data_loader.load_task_data()
+        svc = _get_performance_service()
+        sprint_df = await svc.data_loader.load_sprint_data()
+        task_df = await svc.data_loader.load_task_data()
         total_tasks = len(task_df)
-        completed_tasks = len(task_df[task_df['status'] == 'Completed'])
+        if not task_df.empty and "status" in task_df.columns:
+            completed_tasks = len(task_df[task_df["status"] == "Completed"])
+        else:
+            completed_tasks = 0
+        unique_devs = (
+            int(task_df["assigned_developer"].nunique())
+            if not task_df.empty and "assigned_developer" in task_df.columns
+            else 0
+        )
+        unique_tls = (
+            int(sprint_df["created_by"].nunique())
+            if not sprint_df.empty and "created_by" in sprint_df.columns
+            else 0
+        )
         return JSONResponse({
             "total_sprints": len(sprint_df),
             "total_tasks": total_tasks,
             "completed_tasks": completed_tasks,
             "completion_rate": round(completed_tasks / total_tasks, 3) if total_tasks > 0 else 0,
-            "unique_developers": task_df['assigned_developer'].nunique(),
-            "unique_team_leads": sprint_df['created_by'].nunique(),
+            "unique_developers": unique_devs,
+            "unique_team_leads": unique_tls,
             "generated_at": datetime.utcnow().isoformat()
         })
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Metrics summary error: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.error(f"Metrics summary error: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=_internal_error_message(e))

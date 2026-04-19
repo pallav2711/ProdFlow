@@ -243,16 +243,18 @@ class PerformanceAnalysisService:
         )
         dev_metrics_df = self._sanitize_metrics_dataframe(dev_metrics_df)
         dev_metrics_df = self._add_user_names(dev_metrics_df, user_df, 'developer_id')
-        
-        if settings.ML_CLUSTERING_ENABLED and len(dev_metrics_df) >= 3:
-            dev_metrics_df = self.clustering_engine.cluster_developers(dev_metrics_df)
-        else:
-            dev_metrics_df['performance_cluster'] = dev_metrics_df['efficiency_score'].apply(
-                lambda x: "High Performer" if x >= 80 else "Average Performer" if x >= 60 else "Needs Improvement"
-            )
-        
+
+        if not dev_metrics_df.empty:
+            if settings.ML_CLUSTERING_ENABLED and len(dev_metrics_df) >= 3:
+                dev_metrics_df = self.clustering_engine.cluster_developers(dev_metrics_df)
+            else:
+                dev_metrics_df["performance_cluster"] = dev_metrics_df["efficiency_score"].apply(
+                    lambda x: "High Performer" if x >= 80 else "Average Performer" if x >= 60 else "Needs Improvement"
+                )
+
         # Calculate team lead metrics
-        tl_metrics_df = self.tl_metrics_calc.calculate_teamlead_metrics(            sprint_df, task_df, review_df
+        tl_metrics_df = self.tl_metrics_calc.calculate_teamlead_metrics(
+            sprint_df, task_df, review_df
         )
         tl_metrics_df = self._sanitize_metrics_dataframe(tl_metrics_df)
         tl_metrics_df = self._add_user_names(tl_metrics_df, user_df, 'team_lead_id')
@@ -273,15 +275,28 @@ class PerformanceAnalysisService:
             # Train risk model if enough data
             if len(sprint_df) >= settings.ML_MIN_DATA_POINTS:
                 self.risk_predictor.train(sprint_df, task_df)
-            
-            # Predict for active sprints
-            active_sprints = sprint_df[sprint_df['status'] == 'Active']
-            for _, sprint in active_sprints.iterrows():
-                sprint_tasks = task_df[task_df['sprint_id'] == sprint['sprint_id']]
-                risk_pred = self.risk_predictor.predict_sprint_risk(
-                    sprint.to_dict(), sprint_tasks
-                )
-                sprint_risks.append(SprintRiskPrediction(**risk_pred))
+
+            # Predict for active sprints (never fail the whole dashboard for one sprint)
+            if not sprint_df.empty and "status" in sprint_df.columns and "sprint_id" in sprint_df.columns:
+                active_sprints = sprint_df[sprint_df["status"] == "Active"]
+                for _, sprint in active_sprints.iterrows():
+                    try:
+                        sid = sprint.get("sprint_id")
+                        sprint_tasks = (
+                            task_df[task_df["sprint_id"] == sid]
+                            if not task_df.empty and "sprint_id" in task_df.columns
+                            else pd.DataFrame()
+                        )
+                        risk_pred = self.risk_predictor.predict_sprint_risk(
+                            sprint.to_dict(), sprint_tasks
+                        )
+                        sprint_risks.append(SprintRiskPrediction(**risk_pred))
+                    except Exception as e:
+                        logger.warning(
+                            "Skipping risk prediction for sprint %s: %s",
+                            sprint.get("sprint_id", "?"),
+                            e,
+                        )
         
         # Calculate summary statistics
         summary = {
@@ -328,6 +343,13 @@ class PerformanceAnalysisService:
         if len(numeric_columns) > 0:
             sanitized_df[numeric_columns] = sanitized_df[numeric_columns].fillna(0.0)
 
+        if "efficiency_score" in sanitized_df.columns:
+            sanitized_df["efficiency_score"] = (
+                pd.to_numeric(sanitized_df["efficiency_score"], errors="coerce")
+                .fillna(0.0)
+                .clip(0.0, 100.0)
+            )
+
         return sanitized_df
     
     def _add_user_names(
@@ -346,9 +368,14 @@ class PerformanceAnalysisService:
             metrics_df[id_column.replace('_id', '_name')] = metrics_df[id_column]
             return metrics_df
         
-        # Map user IDs to names
-        user_map = dict(zip(user_df['user_id'], user_df['name']))
-        metrics_df[id_column.replace('_id', '_name')] = metrics_df[id_column].map(
+        # Map user IDs to names (tolerate alternate id column from API)
+        uid_col = "user_id" if "user_id" in user_df.columns else None
+        name_col = "name" if "name" in user_df.columns else None
+        if uid_col and name_col:
+            user_map = dict(zip(user_df[uid_col].astype(str), user_df[name_col].fillna("Unknown").astype(str)))
+        else:
+            user_map = {}
+        metrics_df[id_column.replace("_id", "_name")] = metrics_df[id_column].astype(str).map(
             lambda x: user_map.get(x, x)
         )
         

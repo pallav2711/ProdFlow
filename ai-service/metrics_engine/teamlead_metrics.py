@@ -44,7 +44,16 @@ class TeamLeadMetricsCalculator:
             logger.warning(f"Weights sum to {total_weight}, normalizing to 1.0")
             for key in self.weights:
                 self.weights[key] /= total_weight
-    
+
+    @staticmethod
+    def _sprint_team_size(sprint: pd.Series) -> float:
+        """Developers available for capacity math; tolerates API field names."""
+        if "developer_count" in sprint.index and pd.notna(sprint.get("developer_count")):
+            return max(1.0, float(sprint["developer_count"]))
+        if "team_size" in sprint.index and pd.notna(sprint.get("team_size")):
+            return max(1.0, float(sprint["team_size"]))
+        return 5.0
+
     def calculate_teamlead_metrics(
         self,
         sprint_df: pd.DataFrame,
@@ -170,10 +179,10 @@ class TeamLeadMetricsCalculator:
                 continue
             
             # Calculate capacity vs workload
-            total_estimated = sprint_tasks['estimated_hours'].sum()
-            sprint_duration = sprint['duration']
-            developer_count = sprint['developer_count'] if 'developer_count' in sprint.index else 5
-            
+            total_estimated = sprint_tasks["estimated_hours"].sum() if "estimated_hours" in sprint_tasks.columns else 0.0
+            sprint_duration = float(sprint.get("duration", 14) or 14)
+            developer_count = self._sprint_team_size(sprint)
+
             # Assume 6 productive hours per developer per day
             available_capacity = sprint_duration * developer_count * 6
             
@@ -343,12 +352,14 @@ class TeamLeadMetricsCalculator:
             (tasks['actual_hours'].notna()) &
             (tasks['actual_hours'] > 0)
         ]
-        
+        if "estimated_hours" in completed_tasks.columns:
+            completed_tasks = completed_tasks[completed_tasks["estimated_hours"] > 0]
+
         if completed_tasks.empty:
             return 0.5
-        
+
         # Calculate estimation accuracy
-        ratios = completed_tasks['actual_hours'] / completed_tasks['estimated_hours']
+        ratios = completed_tasks["actual_hours"] / completed_tasks["estimated_hours"]
         
         # Good estimation is within 80-120% of estimate
         accurate_estimates = len(ratios[(ratios >= 0.8) & (ratios <= 1.2)])
@@ -373,10 +384,10 @@ class TeamLeadMetricsCalculator:
             if sprint_tasks.empty:
                 continue
             
-            total_estimated = sprint_tasks['estimated_hours'].sum()
-            sprint_duration = sprint['duration']
-            developer_count = sprint['developer_count'] if 'developer_count' in sprint.index else 5
-            
+            total_estimated = sprint_tasks["estimated_hours"].sum() if "estimated_hours" in sprint_tasks.columns else 0.0
+            sprint_duration = float(sprint.get("duration", 14) or 14)
+            developer_count = self._sprint_team_size(sprint)
+
             available_capacity = sprint_duration * developer_count * 8
             utilization = total_estimated / available_capacity if available_capacity > 0 else 0
             

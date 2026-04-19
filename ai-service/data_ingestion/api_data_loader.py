@@ -11,6 +11,49 @@ import os
 
 logger = logging.getLogger(__name__)
 
+# Columns the metrics engines expect; missing keys from older API payloads caused production 500s.
+_TASK_DEFAULTS = {
+    "task_id": "",
+    "sprint_id": "",
+    "feature_name": "",
+    "assigned_developer": "",
+    "estimated_hours": 0.0,
+    "actual_hours": None,
+    "review_count": 0,
+    "status": "To Do",
+    "completion_date": None,
+    "created_date": None,
+}
+
+_SPRINT_DEFAULTS = {
+    "sprint_id": "",
+    "name": "",
+    "start_date": None,
+    "end_date": None,
+    "duration": 14,
+    "created_by": "",
+    "feature_count": 0,
+    "team_size": 0,
+    "status": "Unknown",
+}
+
+_REVIEW_DEFAULTS = {
+    "review_id": "",
+    "task_id": "",
+    "submitted_by": "",
+    "reviewed_by": "",
+    "submission_time": None,
+    "review_time": None,
+    "review_result": "",
+}
+
+_USER_DEFAULTS = {
+    "user_id": "",
+    "name": "Unknown",
+    "email": "",
+    "role": "",
+}
+
 
 class APIDataLoader:
     """
@@ -31,7 +74,54 @@ class APIDataLoader:
         # AI Service API key for authentication
         self.api_key = os.getenv('AI_SERVICE_API_KEY', 'ai-service-internal-key-2024')
         logger.info(f"API Data Loader initialized with base URL: {self.api_base_url}")
-        
+
+    def _ensure_columns(self, df: pd.DataFrame, defaults: dict) -> pd.DataFrame:
+        """Add missing columns with safe defaults so downstream metrics never KeyError."""
+        if df.empty:
+            return df
+        out = df.copy()
+        for col, default in defaults.items():
+            if col not in out.columns:
+                out[col] = default
+        return out
+
+    def _normalize_sprints_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = self._ensure_columns(df, _SPRINT_DEFAULTS)
+        if df.empty:
+            return df
+        if "duration" in df.columns:
+            df["duration"] = pd.to_numeric(df["duration"], errors="coerce").fillna(14).clip(lower=1, upper=365)
+        if "team_size" in df.columns:
+            df["team_size"] = pd.to_numeric(df["team_size"], errors="coerce").fillna(0)
+        if "developer_count" not in df.columns and "team_size" in df.columns:
+            ts = pd.to_numeric(df["team_size"], errors="coerce").fillna(5).clip(lower=1, upper=100)
+            df["developer_count"] = ts
+        elif "developer_count" not in df.columns:
+            df["developer_count"] = 5
+        return df
+
+    def _normalize_tasks_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = self._ensure_columns(df, _TASK_DEFAULTS)
+        if df.empty:
+            return df
+        for col in ("estimated_hours", "review_count"):
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+        if "actual_hours" in df.columns:
+            df["actual_hours"] = pd.to_numeric(df["actual_hours"], errors="coerce")
+        return df
+
+    def _normalize_reviews_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        return self._ensure_columns(df, _REVIEW_DEFAULTS)
+
+    def _normalize_users_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        df = self._ensure_columns(df, _USER_DEFAULTS)
+        if df.empty:
+            return df
+        if "name" in df.columns:
+            df["name"] = df["name"].fillna("Unknown").astype(str)
+        return df
+
     async def load_complete_dataset(
         self,
         start_date: Optional[datetime] = None,
@@ -84,7 +174,12 @@ class APIDataLoader:
                             tasks_df = pd.DataFrame(dataset.get('tasks', []))
                             reviews_df = pd.DataFrame(dataset.get('reviews', []))
                             users_df = pd.DataFrame(dataset.get('users', []))
-                            
+
+                            sprints_df = self._normalize_sprints_df(sprints_df)
+                            tasks_df = self._normalize_tasks_df(tasks_df)
+                            reviews_df = self._normalize_reviews_df(reviews_df)
+                            users_df = self._normalize_users_df(users_df)
+
                             # Convert date strings to datetime (only if columns exist)
                             if not sprints_df.empty:
                                 if 'start_date' in sprints_df.columns:
