@@ -45,10 +45,29 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],  # Only allow needed methods
+    allow_methods=["GET", "POST", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization", "Accept", "Accept-Encoding"],
-    max_age=3600,  # Cache preflight requests for 1 hour
+    max_age=3600,
 )
+
+# Mount performance API routes
+try:
+    from performance_api import app as performance_app
+    from fastapi import APIRouter
+    import performance_api as _perf_module
+
+    # Copy routes from performance_app into main app
+    for route in performance_app.routes:
+        # Skip root and health — main app already has them
+        if hasattr(route, 'path') and route.path not in ('/', '/health', '/ping', '/docs', '/redoc', '/openapi.json'):
+            app.routes.append(route)
+
+    # Share the startup event so performance_service gets initialized
+    app.router.on_startup.extend(performance_app.router.on_startup)
+
+    print("✅ Performance API routes mounted successfully")
+except Exception as e:
+    print(f"⚠️  Performance API not available: {e}")
 
 # Cache for predictions to reduce computation
 prediction_cache = {}
