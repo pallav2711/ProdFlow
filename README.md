@@ -67,31 +67,109 @@
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 16+ and npm 8+
-- Python 3.9+ with pip
-- MongoDB 5.0+ (local or Atlas)
+- **Node.js** 16+ and npm 8+
+- **Python** 3.10+ with pip
+- **MongoDB** 5.0+ (local or Atlas)
 - Git
 
-### One-Command Setup
+### ⚡ Automated Setup (Recommended)
 
+#### Step 1: Check Prerequisites
 ```bash
-# Clone repository
-git clone <repository-url>
-cd prodflow-ai
-
-# Install everything and start services
-# Windows
-install-all.bat && start-all.bat
-
-# Linux/Mac
-chmod +x install-all.sh start-all.sh
-./install-all.sh && ./start-all.sh
+check-prerequisites.bat
 ```
 
-### Access the Application
-- **Frontend**: https://prodflowaii.vercel.app (Production) / http://localhost:3000 (Development)
-- **Backend API**: https://prodflow-6rmm.onrender.com (Production) / http://localhost:5000 (Development)
-- **AI Service**: https://prodflow-2w53.onrender.com (Production) / http://localhost:8000 (Development)
+#### Step 2: Start All Services
+```bash
+start-all-services.bat
+```
+
+This will automatically:
+- ✅ Check MongoDB status
+- ✅ Install all dependencies
+- ✅ Start Backend API (Port 5000)
+- ✅ Start Frontend (Port 5173)
+- ✅ Start AI Sprint Service (Port 8000)
+- ✅ Start AI Performance Service (Port 8001)
+- ✅ Open application in browser
+
+#### Step 3: Stop All Services
+```bash
+stop-all-services.bat
+```
+
+### 📋 Manual Setup
+
+#### 1. Install Dependencies
+```bash
+# Backend
+cd backend
+npm install
+
+# Frontend
+cd frontend
+npm install
+
+# AI Services
+cd ai-service
+pip install -r requirements.txt
+pip install -r requirements-performance.txt
+```
+
+#### 2. Configure Environment
+```bash
+# Copy example environment files
+copy backend\.env.example backend\.env
+copy frontend\.env.example frontend\.env
+copy ai-service\.env.example ai-service\.env
+```
+
+#### 3. Start MongoDB
+```bash
+mongod
+# Or if installed as service:
+net start MongoDB
+```
+
+#### 4. Start Services (in separate terminals)
+```bash
+# Terminal 1: Backend
+cd backend
+npm run dev
+
+# Terminal 2: Frontend
+cd frontend
+npm run dev
+
+# Terminal 3: AI Sprint Service
+cd ai-service
+python main.py
+
+# Terminal 4: AI Performance Service
+cd ai-service
+python performance_api.py
+```
+
+### 🌐 Access the Application
+
+#### Local Development
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:5000
+- **AI Sprint Service**: http://localhost:8000
+- **AI Performance Service**: http://localhost:8001
+- **MongoDB**: mongodb://localhost:27017
+
+#### Production
+- **Frontend**: https://prodflowaii.vercel.app
+- **Backend API**: https://prodflow-6rmm.onrender.com
+- **AI Service**: https://prodflow-2w53.onrender.com
+
+#### API Documentation
+- **AI Sprint Docs**: http://localhost:8000/docs
+- **AI Performance Docs**: http://localhost:8001/docs
+
+### 📖 Detailed Startup Guide
+For troubleshooting and detailed instructions, see [STARTUP_GUIDE.md](STARTUP_GUIDE.md)
 
 ## 🐳 Docker Deployment
 

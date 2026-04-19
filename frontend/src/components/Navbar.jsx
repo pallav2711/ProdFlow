@@ -105,9 +105,14 @@ const Navbar = () => {
                     </Link>
                     
                     {user.role === 'Product Manager' && (
-                      <Link to="/product-planning" className={getDesktopNavLinkClass('/product-planning')}>
-                        Product Planning
-                      </Link>
+                      <>
+                        <Link to="/product-planning" className={getDesktopNavLinkClass('/product-planning')}>
+                          Product Planning
+                        </Link>
+                        <Link to="/manager-analytics" className={getDesktopNavLinkClass('/manager-analytics')}>
+                          🤖 AI Analytics
+                        </Link>
+                      </>
                     )}
                     
                     {user.role === 'Team Lead' && (
@@ -234,13 +239,22 @@ const Navbar = () => {
                     </Link>
                     
                     {user.role === 'Product Manager' && (
-                      <Link 
-                        to="/product-planning" 
-                        className={getMobileNavLinkClass('/product-planning')}
-                        onClick={closeMobileMenu}
-                      >
-                        Product Planning
-                      </Link>
+                      <>
+                        <Link 
+                          to="/product-planning" 
+                          className={getMobileNavLinkClass('/product-planning')}
+                          onClick={closeMobileMenu}
+                        >
+                          Product Planning
+                        </Link>
+                        <Link 
+                          to="/manager-analytics" 
+                          className={getMobileNavLinkClass('/manager-analytics')}
+                          onClick={closeMobileMenu}
+                        >
+                          🤖 AI Analytics
+                        </Link>
+                      </>
                     )}
                     
                     {user.role === 'Team Lead' && (

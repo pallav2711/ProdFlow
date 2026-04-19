@@ -34,8 +34,16 @@ const validateRegister = [
     .withMessage('Please provide a valid email'),
   
   body('password')
-    .isLength({ min: 6 })
-    .withMessage('Password must be at least 6 characters long'),
+    .isLength({ min: 10, max: 128 })
+    .withMessage('Password must be between 10 and 128 characters long')
+    .matches(/[A-Z]/)
+    .withMessage('Password must include at least one uppercase letter')
+    .matches(/[a-z]/)
+    .withMessage('Password must include at least one lowercase letter')
+    .matches(/\d/)
+    .withMessage('Password must include at least one number')
+    .matches(/[!@#$%^&*(),.?":{}|<>_\-\[\]\\;/+=~`]/)
+    .withMessage('Password must include at least one special character'),
   
   body('role')
     .isIn(['Product Manager', 'Team Lead', 'Developer'])

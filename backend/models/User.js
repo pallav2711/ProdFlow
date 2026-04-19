@@ -42,6 +42,10 @@ const userSchema = new mongoose.Schema({
     type: String,
     select: false // Don't return refresh token by default
   },
+  refreshTokenExpiresAt: {
+    type: Date,
+    select: false
+  },
   lastLogin: {
     type: Date,
     default: Date.now
@@ -55,10 +59,11 @@ const userSchema = new mongoose.Schema({
 // Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) {
-    next();
+    return next();
   }
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  return next();
 });
 
 // Method to compare passwords

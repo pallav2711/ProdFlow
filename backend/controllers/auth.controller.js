@@ -5,13 +5,14 @@
 
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { validationError, unauthorizedError, conflictError } = require('../utils/errorFactory');
 const sendSuccess = require('../utils/successResponse');
 
 // Generate JWT access token (short-lived)
 const generateAccessToken = (id, rememberMe = false) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: rememberMe ? '15m' : '30m' // Longer expiration to prevent frequent 401s during idle time
+    expiresIn: rememberMe ? '30m' : '15m'
   });
 };
 
@@ -21,6 +22,9 @@ const generateRefreshToken = (id) => {
     expiresIn: '7d' // Long-lived refresh token
   });
 };
+
+const hashToken = (token) =>
+  crypto.createHash('sha256').update(token).digest('hex');
 
 // @desc    Register new user
 // @route   POST /api/auth/register
@@ -52,7 +56,8 @@ exports.register = async (req, res, next) => {
 
     // Store refresh token in user document (for security)
     if (refreshToken) {
-      user.refreshToken = refreshToken;
+      user.refreshToken = hashToken(refreshToken);
+      user.refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
       await user.save();
     }
 
@@ -79,7 +84,7 @@ exports.register = async (req, res, next) => {
 // @access  Public
 exports.login = async (req, res, next) => {
   try {
-    const { email, password, rememberMe = true } = req.body;
+    const { email, password, rememberMe = false } = req.body;
 
     // Validate input
     if (!email || !password) {
@@ -87,7 +92,7 @@ exports.login = async (req, res, next) => {
     }
 
     // Check for user (include password for comparison)
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email }).select('+password +refreshToken +refreshTokenExpiresAt');
     if (!user) {
       return next(unauthorizedError('Invalid credentials', 'INVALID_CREDENTIALS'));
     }
@@ -104,9 +109,14 @@ exports.login = async (req, res, next) => {
 
     // Store refresh token if rememberMe is true
     if (refreshToken) {
-      user.refreshToken = refreshToken;
-      await user.save();
+      user.refreshToken = hashToken(refreshToken);
+      user.refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    } else {
+      user.refreshToken = null;
+      user.refreshTokenExpiresAt = null;
     }
+    user.lastLogin = new Date();
+    await user.save();
 
     return sendSuccess(res, {
       data: {
@@ -141,17 +151,31 @@ exports.refreshToken = async (req, res, next) => {
     const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
     
     // Find user and check if refresh token matches
-    const user = await User.findById(decoded.id);
-    if (!user || user.refreshToken !== refreshToken) {
+    const user = await User.findById(decoded.id).select('+refreshToken +refreshTokenExpiresAt');
+    const hashedToken = hashToken(refreshToken);
+    const refreshTokenExpired =
+      user?.refreshTokenExpiresAt && user.refreshTokenExpiresAt.getTime() < Date.now();
+
+    if (
+      !user ||
+      refreshTokenExpired ||
+      !user.refreshToken ||
+      (user.refreshToken !== hashedToken && user.refreshToken !== refreshToken)
+    ) {
       return next(unauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN'));
     }
 
     // Generate new access token
-    const newAccessToken = generateAccessToken(user._id);
+    const newAccessToken = generateAccessToken(user._id, true);
+    const rotatedRefreshToken = generateRefreshToken(user._id);
+    user.refreshToken = hashToken(rotatedRefreshToken);
+    user.refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    await user.save();
 
     return sendSuccess(res, {
       data: {
         accessToken: newAccessToken,
+        refreshToken: rotatedRefreshToken,
         user: {
           id: user._id,
           name: user.name,
@@ -184,9 +208,10 @@ exports.getMe = async (req, res, next) => {
 exports.logout = async (req, res, next) => {
   try {
     // Clear refresh token from database
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select('+refreshToken +refreshTokenExpiresAt');
     if (user) {
       user.refreshToken = null;
+      user.refreshTokenExpiresAt = null;
       await user.save();
     }
 

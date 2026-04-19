@@ -114,9 +114,12 @@ api.interceptors.response.use(
         if (refreshToken) {
           console.log('Attempting to refresh token...');
           const response = await api.post('/auth/refresh', { refreshToken });
-          const { accessToken } = response.data;
+          const { accessToken, refreshToken: nextRefreshToken } = response.data;
           
           localStorage.setItem('accessToken', accessToken);
+          if (nextRefreshToken) {
+            localStorage.setItem('refreshToken', nextRefreshToken);
+          }
           api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
           
           processQueue(null, accessToken);

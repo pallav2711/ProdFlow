@@ -1,0 +1,16 @@
+{
+  "name": "ProdFlow AI",
+  "short_name": "ProdFlow AI",
+  "description": "AI-Driven Product & Sprint Planning SaaS",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#4F46E5",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

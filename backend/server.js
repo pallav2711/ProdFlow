@@ -294,9 +294,24 @@ function sanitizeObject(obj) {
   if (typeof obj !== 'object' || obj === null) {
     return typeof obj === 'string' ? sanitizeString(obj) : obj;
   }
-  
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => sanitizeObject(item));
+  }
+
   const sanitized = {};
   for (const [key, value] of Object.entries(obj)) {
+    // Block keys commonly abused for NoSQL/prototype pollution attacks.
+    if (
+      key === '__proto__' ||
+      key === 'prototype' ||
+      key === 'constructor' ||
+      key.startsWith('$') ||
+      key.includes('.')
+    ) {
+      continue;
+    }
+
     const sanitizedKey = sanitizeString(key);
     if (typeof value === 'object' && value !== null) {
       sanitized[sanitizedKey] = sanitizeObject(value);
@@ -338,6 +353,7 @@ app.use('/api/auth', require('./routes/auth.routes'));
 app.use('/api/products', require('./routes/product.routes'));
 app.use('/api/sprints', require('./routes/sprint.routes'));
 app.use('/api/teams', require('./routes/team.routes'));
+app.use('/api/analytics', require('./routes/analytics.routes'));
 app.use('/api/health', require('./routes/health.routes'));
 
 // CORS test endpoint

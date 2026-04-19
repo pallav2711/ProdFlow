@@ -1,0 +1,10 @@
+/manifest.json
+  Content-Type: application/json
+
+/favicon.svg
+  Content-Type: image/svg+xml
+
+/*
+  X-Frame-Options: DENY
+  X-Content-Type-Options: nosniff
+  X-XSS-Protection: 1; mode=block

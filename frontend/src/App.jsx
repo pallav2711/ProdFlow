@@ -19,6 +19,7 @@ const SprintPlanner = lazy(() => import('./pages/SprintPlanner'))
 const MyTasks = lazy(() => import('./pages/MyTasks'))
 const AllTeamTasks = lazy(() => import('./pages/AllTeamTasks'))
 const SprintHistory = lazy(() => import('./pages/SprintHistory'))
+const ManagerDashboard = lazy(() => import('./pages/ManagerDashboard'))
 
 // Loading component for suspense fallback
 const LoadingSpinner = () => (
@@ -91,6 +92,12 @@ function AppContent() {
           <Route path="/sprint-history" element={
             <PrivateRoute roles={['Team Lead', 'Product Manager']}>
               <SprintHistory />
+            </PrivateRoute>
+          } />
+          
+          <Route path="/manager-analytics" element={
+            <PrivateRoute roles={['Product Manager']}>
+              <ManagerDashboard />
             </PrivateRoute>
           } />
           
