@@ -126,12 +126,13 @@ class APIDataLoader:
         self,
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None
-    ) -> Dict[str, pd.DataFrame]:
+    ) -> Dict[str, Any]:
         """
         Load complete dataset from backend API
-        
+
         Returns:
-            Dictionary with DataFrames: sprints, tasks, reviews, users
+            Dictionary with DataFrames: sprints, tasks, reviews, users, plus
+            _ingestion: { ok, code?, message?, http_status? } for diagnostics.
         """
         logger.info("=" * 80)
         logger.info("🚀 LOADING DATA FROM BACKEND API")
@@ -215,24 +216,47 @@ class APIDataLoader:
                                 'sprints': sprints_df,
                                 'tasks': tasks_df,
                                 'reviews': reviews_df,
-                                'users': users_df
+                                'users': users_df,
+                                '_ingestion': {
+                                    'ok': True,
+                                    'code': 'OK',
+                                    'http_status': 200,
+                                    'sprints': len(sprints_df),
+                                    'tasks': len(tasks_df),
+                                    'reviews': len(reviews_df),
+                                    'users': len(users_df),
+                                },
                             }
                         else:
                             logger.error(f"❌ API returned unsuccessful response: {data}")
-                            return self._get_empty_dataset()
+                            return self._get_empty_dataset(
+                                code='API_UNSUCCESSFUL',
+                                message='Backend returned success: false for analytics.',
+                                http_status=200,
+                            )
                     else:
                         error_text = await response.text()
                         logger.error(f"❌ API request failed with status {response.status}")
                         logger.error(f"❌ Error response: {error_text[:500]}")
-                        return self._get_empty_dataset()
-                        
+                        return self._get_empty_dataset(
+                            code=f'HTTP_{response.status}',
+                            message=f'Backend analytics request failed (HTTP {response.status}). Check BACKEND_API_URL and AI_SERVICE_API_KEY on the AI service and backend.',
+                            http_status=response.status,
+                        )
+
         except aiohttp.ClientError as e:
             logger.error(f"❌ Network error loading data from API: {e}")
-            return self._get_empty_dataset()
+            return self._get_empty_dataset(
+                code='NETWORK_ERROR',
+                message=f'Could not reach backend at {self.api_base_url}. Verify BACKEND_API_URL is public and correct.',
+            )
         except Exception as e:
             logger.error(f"❌ Error loading data from API: {e}")
             logger.exception("Full traceback:")
-            return self._get_empty_dataset()
+            return self._get_empty_dataset(
+                code='INGESTION_EXCEPTION',
+                message=str(e)[:200],
+            )
     
     async def load_sprint_data(
         self,
@@ -366,11 +390,23 @@ class APIDataLoader:
             logger.error(f"Error loading user data from API: {e}")
             return pd.DataFrame()
     
-    def _get_empty_dataset(self) -> Dict[str, pd.DataFrame]:
-        """Return empty dataset structure"""
+    def _get_empty_dataset(
+        self,
+        *,
+        code: str = 'UNKNOWN',
+        message: Optional[str] = None,
+        http_status: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """Return empty dataset structure when backend is unreachable or returns an error."""
+        meta: Dict[str, Any] = {'ok': False, 'code': code}
+        if message:
+            meta['message'] = message
+        if http_status is not None:
+            meta['http_status'] = http_status
         return {
             'sprints': pd.DataFrame(),
             'tasks': pd.DataFrame(),
             'reviews': pd.DataFrame(),
-            'users': pd.DataFrame()
+            'users': pd.DataFrame(),
+            '_ingestion': meta,
         }

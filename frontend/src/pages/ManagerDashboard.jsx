@@ -101,6 +101,59 @@ const ManagerDashboard = () => {
         }
       />
 
+      {(() => {
+        const dc = performanceData?.summary?.data_connection
+        const tasks = performanceData?.total_tasks_analyzed ?? 0
+        const sprints = performanceData?.total_sprints_analyzed ?? 0
+        const liveButNoWork =
+          tasks === 0 &&
+          sprints === 0 &&
+          (performanceData?.summary?.total_developers ?? 0) === 0 &&
+          (performanceData?.summary?.total_team_leads ?? 0) === 0
+
+        if (dc && dc.ok === false) {
+          return (
+            <div
+              className="mb-6 rounded-xl border border-amber-300 bg-amber-50 px-4 py-4 text-amber-950 text-sm shadow-sm"
+              role="status"
+            >
+              <p className="font-semibold text-amber-950">Connected to the AI service, but it could not read analytics from your backend</p>
+              {dc.message && <p className="mt-2 text-amber-900">{dc.message}</p>}
+              <p className="mt-3 text-xs text-amber-900/90 leading-relaxed">
+                Typical fix on Render: set the same <code className="rounded bg-amber-100/80 px-1">AI_SERVICE_API_KEY</code>{' '}
+                on the Node API and the Python AI service, and set{' '}
+                <code className="rounded bg-amber-100/80 px-1">BACKEND_API_URL</code> on the AI service to your backend
+                base (for example <code className="rounded bg-amber-100/80 px-1">https://your-api.onrender.com/api</code>
+                — include <code className="rounded bg-amber-100/80 px-1">/api</code>).
+              </p>
+              {dc.code && (
+                <p className="mt-2 text-xs font-mono text-amber-800/80">
+                  code: {dc.code}
+                  {dc.http_status != null ? ` · HTTP ${dc.http_status}` : ''}
+                </p>
+              )}
+            </div>
+          )
+        }
+
+        if (liveButNoWork) {
+          return (
+            <div
+              className="mb-6 rounded-xl border border-blue-200 bg-blue-50/90 px-4 py-4 text-blue-950 text-sm shadow-sm"
+              role="status"
+            >
+              <p className="font-semibold">No sprint or task data yet</p>
+              <p className="mt-2 text-blue-900/90 leading-relaxed">
+                Analytics only appear after you create sprints and tasks in ProdFlow and assign work to developers. If you
+                already have data, confirm this environment uses the same database as where you added it.
+              </p>
+            </div>
+          )
+        }
+
+        return null
+      })()}
+
       {/* Summary Stats */}
       {performanceData?.summary && (
         <div className="grid md:grid-cols-4 gap-6 mb-8">

@@ -230,6 +230,7 @@ class PerformanceAnalysisService:
         
         # Load all data from API
         dataset = await self.data_loader.load_complete_dataset(start_date, end_date)
+        ingestion = dataset.pop('_ingestion', {'ok': True, 'code': 'OK'})
         sprint_df = dataset['sprints']
         task_df = dataset['tasks']
         review_df = dataset['reviews']
@@ -299,6 +300,11 @@ class PerformanceAnalysisService:
                         )
         
         # Calculate summary statistics
+        completed_n = (
+            task_df[task_df['status'] == 'Completed'].shape[0]
+            if len(task_df) > 0 and 'status' in task_df.columns
+            else 0
+        )
         summary = {
             'total_developers': len(developers),
             'high_performers': len([d for d in developers if d.efficiency_score >= 80]),
@@ -306,7 +312,8 @@ class PerformanceAnalysisService:
             'total_team_leads': len(team_leads),
             'avg_teamlead_efficiency': sum(tl.efficiency_score for tl in team_leads) / len(team_leads) if team_leads else 0,
             'total_tasks_analyzed': len(task_df),
-            'avg_completion_rate': task_df[task_df['status'] == 'Completed'].shape[0] / len(task_df) if len(task_df) > 0 else 0
+            'avg_completion_rate': completed_n / len(task_df) if len(task_df) > 0 else 0,
+            'data_connection': ingestion,
         }
         
         # Data period
