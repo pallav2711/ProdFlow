@@ -87,7 +87,7 @@ async def get_manager_insights(
     except ValueError as e:
         raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
     except Exception as e:
-        logger.error(f"Manager dashboard error: {e}")
+        logger.error(f"Manager dashboard error: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 

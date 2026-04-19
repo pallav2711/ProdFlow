@@ -252,8 +252,7 @@ class PerformanceAnalysisService:
             )
         
         # Calculate team lead metrics
-        tl_metrics_df = self.tl_metrics_calc.calculate_teamlead_metrics(
-            sprint_df, task_df, review_df
+        tl_metrics_df = self.tl_metrics_calc.calculate_teamlead_metrics(            sprint_df, task_df, review_df
         )
         tl_metrics_df = self._sanitize_metrics_dataframe(tl_metrics_df)
         tl_metrics_df = self._add_user_names(tl_metrics_df, user_df, 'team_lead_id')
@@ -296,9 +295,12 @@ class PerformanceAnalysisService:
         }
         
         # Data period
+        now = datetime.utcnow()
+        start = sprint_df['start_date'].min() if not sprint_df.empty and 'start_date' in sprint_df.columns and not sprint_df['start_date'].isna().all() else now
+        end = sprint_df['end_date'].max() if not sprint_df.empty and 'end_date' in sprint_df.columns and not sprint_df['end_date'].isna().all() else now
         data_period = {
-            'start_date': sprint_df['start_date'].min() if not sprint_df.empty else datetime.utcnow(),
-            'end_date': sprint_df['end_date'].max() if not sprint_df.empty else datetime.utcnow()
+            'start_date': start.to_pydatetime() if hasattr(start, 'to_pydatetime') else start,
+            'end_date': end.to_pydatetime() if hasattr(end, 'to_pydatetime') else end
         }
         
         return ManagerDashboardResponse(
