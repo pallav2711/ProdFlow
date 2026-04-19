@@ -563,13 +563,15 @@ function CreateSprintModal({
             />
           )}
 
-          {/* SPRINT CAPACITY METRICS - Real-time capacity analysis (no developer breakdown here) */}
+          {/* SPRINT CAPACITY METRICS - Real-time analysis with developer breakdown */}
           {formData.teamSize > 0 && formData.duration > 0 && totalEffort > 0 && (
             <SprintCapacityMetrics
               capacityMetrics={capacityMetrics}
               totalEffort={totalEffort}
               duration={formData.duration}
               teamSize={formData.teamSize}
+              developerWorkload={developerWorkload}
+              teamMembers={teamMembers}
               showDetails={true}
             />
           )}
