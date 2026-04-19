@@ -29,7 +29,8 @@ const ManagerDashboard = () => {
       setError(null)
       
       // Call AI Performance Analysis Service
-      const response = await fetch('http://localhost:8001/ai/manager-insights')
+      const aiServiceUrl = import.meta.env.VITE_AI_PERFORMANCE_URL || import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001'
+      const response = await fetch(`${aiServiceUrl}/ai/manager-insights`)
       
       if (!response.ok) {
         throw new Error('Failed to fetch performance data')
