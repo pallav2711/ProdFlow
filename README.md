@@ -6,10 +6,10 @@
 
 **Transform your agile workflow with intelligent predictions and real-time insights**
 
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/prodflow-ai?style=for-the-badge&logo=github)](https://github.com/yourusername/prodflow-ai/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/pallav2711/ProdFlow?style=for-the-badge&logo=github)](https://github.com/pallav2711/ProdFlow/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
-[![Last Commit](https://img.shields.io/github/last-commit/yourusername/prodflow-ai?style=for-the-badge&logo=git)](https://github.com/yourusername/prodflow-ai/commits/main)
-[![Open Issues](https://img.shields.io/github/issues/yourusername/prodflow-ai?style=for-the-badge&logo=github)](https://github.com/yourusername/prodflow-ai/issues)
+[![Last Commit](https://img.shields.io/github/last-commit/pallav2711/ProdFlow?style=for-the-badge&logo=git)](https://github.com/pallav2711/ProdFlow/commits/main)
+[![Open Issues](https://img.shields.io/github/issues/pallav2711/ProdFlow?style=for-the-badge&logo=github)](https://github.com/pallav2711/ProdFlow/issues)
 
 [![React](https://img.shields.io/badge/React-18.2-61DAFB?style=for-the-badge&logo=react&logoColor=white)](https://reactjs.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-16+-339933?style=for-the-badge&logo=node.js&logoColor=white)](https://nodejs.org/)
@@ -17,7 +17,7 @@
 [![MongoDB](https://img.shields.io/badge/MongoDB-5.0+-47A248?style=for-the-badge&logo=mongodb&logoColor=white)](https://www.mongodb.com/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 
-[🌐 Live Demo](https://prodflow-ai.vercel.app) • [📖 Documentation](./docs) • [🐛 Report Bug](https://github.com/yourusername/prodflow-ai/issues) • [✨ Request Feature](https://github.com/yourusername/prodflow-ai/issues)
+[🌐 Live Demo](https://prodflowaii.vercel.app) • [📖 Documentation](./docs) • [🐛 Report Bug](https://github.com/pallav2711/ProdFlow/issues) • [✨ Request Feature](https://github.com/pallav2711/ProdFlow/issues)
 
 </div>
 
@@ -63,22 +63,7 @@ ProdFlow AI is a **next-generation SaaS platform** that revolutionizes how devel
 
 Experience ProdFlow AI in action:
 
-**🔗 [https://prodflowaii.vercel.app/](https://prodflowaii.vercel.app/)**
-
-**Test Credentials:**
-```
-Product Manager:
-📧 Email: manager@prodflow.ai
-🔑 Password: password123
-
-Team Lead:
-📧 Email: lead@prodflow.ai
-🔑 Password: password123
-
-Developer:
-📧 Email: dev@prodflow.ai
-🔑 Password: password123
-```
+**🔗 [https://prodflowaii.vercel.app](https://prodflowaii.vercel.app)**
 
 ---
 
@@ -281,8 +266,8 @@ Ensure you have these installed:
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/prodflow-ai.git
-cd prodflow-ai
+git clone https://github.com/pallav2711/ProdFlow.git
+cd ProdFlow
 
 # Copy environment files
 copy .env.example.backend backend\.env
@@ -328,8 +313,8 @@ Once all services are running:
 ### 1️⃣ Clone Repository
 
 ```bash
-git clone https://github.com/yourusername/prodflow-ai.git
-cd prodflow-ai
+git clone https://github.com/pallav2711/ProdFlow.git
+cd ProdFlow
 ```
 
 ### 2️⃣ Backend Setup
@@ -847,9 +832,9 @@ If you find ProdFlow AI helpful, please consider giving it a star! It helps the 
 
 <div align="center">
 
-[![GitHub Stars](https://img.shields.io/github/stars/yourusername/prodflow-ai?style=social)](https://github.com/yourusername/prodflow-ai/stargazers)
+[![GitHub Stars](https://img.shields.io/github/stars/pallav2711/ProdFlow?style=social)](https://github.com/pallav2711/ProdFlow/stargazers)
 
-**[⭐ Star this repository](https://github.com/yourusername/prodflow-ai)**
+**[⭐ Star this repository](https://github.com/pallav2711/ProdFlow)**
 
 </div>
 
@@ -906,7 +891,7 @@ Thanks to all the amazing people who have contributed to this project!
 
 <div align="center">
 
-[![Contributors](https://img.shields.io/github/contributors/yourusername/prodflow-ai?style=for-the-badge)](https://github.com/yourusername/prodflow-ai/graphs/contributors)
+[![Contributors](https://img.shields.io/github/contributors/pallav2711/ProdFlow?style=for-the-badge)](https://github.com/pallav2711/ProdFlow/graphs/contributors)
 
 </div>
 
@@ -932,11 +917,9 @@ Special thanks to:
 Need help or want to connect with the community?
 
 - 📖 **Documentation**: [docs/](docs/)
-- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/yourusername/prodflow-ai/issues)
-- 💬 **Discussions**: [GitHub Discussions](https://github.com/yourusername/prodflow-ai/discussions)
+- 🐛 **Bug Reports**: [GitHub Issues](https://github.com/pallav2711/ProdFlow/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/pallav2711/ProdFlow/discussions)
 - 📧 **Email**: Pallavkanani27@gmail.com
-- 💼 **LinkedIn**: [ProdFlow AI](https://linkedin.com/company/prodflow-ai)
-- 🐦 **Twitter**: [@ProdFlowAI](https://twitter.com/prodflowai)
 
 ---
 
@@ -955,7 +938,7 @@ Exciting features coming soon:
 - [ ] 🤝 Team collaboration features
 - [ ] 🔐 SSO and enterprise authentication
 
-Vote for features or suggest new ones in [GitHub Discussions](https://github.com/yourusername/prodflow-ai/discussions)!
+Vote for features or suggest new ones in [GitHub Discussions](https://github.com/pallav2711/ProdFlow/discussions)!
 
 ---
 
@@ -963,10 +946,10 @@ Vote for features or suggest new ones in [GitHub Discussions](https://github.com
 
 <div align="center">
 
-![GitHub repo size](https://img.shields.io/github/repo-size/yourusername/prodflow-ai?style=for-the-badge)
-![GitHub code size](https://img.shields.io/github/languages/code-size/yourusername/prodflow-ai?style=for-the-badge)
-![GitHub language count](https://img.shields.io/github/languages/count/yourusername/prodflow-ai?style=for-the-badge)
-![GitHub top language](https://img.shields.io/github/languages/top/yourusername/prodflow-ai?style=for-the-badge)
+![GitHub repo size](https://img.shields.io/github/repo-size/pallav2711/ProdFlow?style=for-the-badge)
+![GitHub code size](https://img.shields.io/github/languages/code-size/pallav2711/ProdFlow?style=for-the-badge)
+![GitHub language count](https://img.shields.io/github/languages/count/pallav2711/ProdFlow?style=for-the-badge)
+![GitHub top language](https://img.shields.io/github/languages/top/pallav2711/ProdFlow?style=for-the-badge)
 
 </div>
 
