@@ -129,7 +129,7 @@ const Navbar = () => {
                       </>
                     )}
 
-                    {(user.role === 'Developer' || user.role === 'Product Manager') && (
+                    {(user.role === 'Developer') && (
                       <Link to="/my-tasks" className={getDesktopNavLinkClass('/my-tasks')}>
                         My Tasks
                       </Link>
@@ -283,7 +283,7 @@ const Navbar = () => {
                       </>
                     )}
 
-                    {(user.role === 'Developer' || user.role === 'Product Manager') && (
+                    {(user.role === 'Developer') && (
                       <Link 
                         to="/my-tasks" 
                         className={getMobileNavLinkClass('/my-tasks')}

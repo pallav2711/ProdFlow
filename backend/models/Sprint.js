@@ -62,9 +62,12 @@ const sprintSchema = new mongoose.Schema({
   }
 });
 
-// Common read/query paths
-sprintSchema.index({ product: 1, createdAt: -1 });
-sprintSchema.index({ createdBy: 1, createdAt: -1 });
-sprintSchema.index({ status: 1, createdAt: -1 });
+// Optimised indexes
+sprintSchema.index({ product: 1, status: 1, createdAt: -1 })
+sprintSchema.index({ createdBy: 1, status: 1, createdAt: -1 })
+sprintSchema.index({ status: 1, createdAt: -1 })
+// New: Analytics date-range queries
+sprintSchema.index({ startDate: 1, status: 1 })
+sprintSchema.index({ product: 1, startDate: 1 })
 
 module.exports = mongoose.model('Sprint', sprintSchema);

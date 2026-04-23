@@ -3,51 +3,59 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
   plugins: [react()],
+
   server: {
     port: 3000,
     host: '0.0.0.0',
-    historyApiFallback: true, // Enable SPA routing support
     proxy: {
-      '/api': {
-        target: 'http://localhost:5000',
-        changeOrigin: true
-      }
-    }
-  },
-  build: {
-    // Enable code splitting and optimization
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          // Separate vendor chunks for better caching
-          vendor: ['react', 'react-dom'],
-          router: ['react-router-dom'],
-          utils: ['axios']
-        }
-      }
+      '/api': { target: 'http://localhost:5000', changeOrigin: true },
     },
-    // Enable minification and compression
+  },
+
+  build: {
+    // Tighter warning threshold forces you to notice large chunks
+    chunkSizeWarningLimit: 400,
     minify: 'terser',
+    sourcemap: false,
+
     terserOptions: {
       compress: {
-        drop_console: true, // Remove console.logs in production
+        drop_console:  true,
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.info', 'console.debug', 'console.warn']
+        pure_funcs:    ['console.log', 'console.info', 'console.debug', 'console.warn'],
       },
-      mangle: {
-        safari10: true
-      },
-      format: {
-        comments: false
-      }
+      mangle:  { safari10: true },
+      format:  { comments: false },
     },
-    // Optimize chunk size
-    chunkSizeWarningLimit: 1000,
-    // Enable source maps for debugging (can be disabled for smaller builds)
-    sourcemap: false
+
+    rollupOptions: {
+      output: {
+        // Fine-grained manual chunks — each loads only when its route is visited
+        manualChunks (id) {
+          if (!id.includes('node_modules')) return
+
+          // Split large libs into their own cacheable chunks
+          if (id.includes('react-dom'))     return 'react-dom'
+          if (id.includes('react-router'))  return 'router'
+          if (id.includes('react'))         return 'react'
+          if (id.includes('lucide-react'))  return 'icons'
+          if (id.includes('axios'))         return 'axios'
+          if (id.includes('@vercel'))       return 'vercel'
+
+          // Everything else in a single vendor chunk
+          return 'vendor'
+        },
+
+        // Deterministic file names for long-term CDN caching
+        entryFileNames:  'assets/[name]-[hash].js',
+        chunkFileNames:  'assets/[name]-[hash].js',
+        assetFileNames:  'assets/[name]-[hash][extname]',
+      },
+    },
   },
-  // Enable dependency pre-bundling for faster dev server
+
+  // Pre-bundle critical deps for faster cold dev-server start
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react-router-dom', 'axios']
-  }
+    include: ['react', 'react-dom', 'react-router-dom', 'axios'],
+  },
 })

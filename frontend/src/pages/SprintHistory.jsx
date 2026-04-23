@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDashboard } from '../context/DashboardContext'
@@ -8,6 +8,7 @@ import PageHeader from '../components/PageHeader'
 import PaginationControls from '../components/PaginationControls'
 import PageSkeleton from '../components/PageSkeleton'
 import { StatusIcon, WorkTypeIcon } from '../components/AppIcons'
+import { getStatusColor, getWorkTypeColor } from '../utils/taskHelpers'
 
 const SprintHistory = () => {
   const { user } = useAuth()
@@ -22,67 +23,45 @@ const SprintHistory = () => {
   } = useDashboard()
   
   const [products, setProducts] = useState([])
-  const [sprintsByProduct, setSprintsByProduct] = useState({})
   const [expandedProducts, setExpandedProducts] = useState({})
   const [expandedSprints, setExpandedSprints] = useState({})
   const [sprintDetails, setSprintDetails] = useState({})
   const [sprintPage, setSprintPage] = useState(1)
   const SPRINTS_PAGE_SIZE = 20
 
-  // Fetch data when component mounts
   useEffect(() => {
     if (user) {
-      console.log('SprintHistory mounted, fetching data...')
-      fetchData()
+      fetchDashboardData(true, { pagination: { sprints: { page: sprintPage, limit: SPRINTS_PAGE_SIZE } } })
+      api.get('/products', { params: { page: 1, limit: 100 } })
+        .then(res => setProducts(res.data.products))
+        .catch(() => {})
     }
   }, [user, sprintPage])
 
-  // Update local state when sprints data changes
-  useEffect(() => {
-    if (sprints.length > 0) {
-      groupSprintsByProduct()
-    }
-  }, [sprints])
-
-  const fetchData = async () => {
-    try {
-      // Fetch dashboard data (includes sprints)
-      await fetchDashboardData(true, {
-        pagination: {
-          sprints: { page: sprintPage, limit: SPRINTS_PAGE_SIZE }
-        }
-      })
-      
-      // Fetch products separately
-      const productsRes = await api.get('/products', {
-        params: { page: 1, limit: 100 }
-      })
-      setProducts(productsRes.data.products)
-    } catch (error) {
-      console.error('Error fetching sprint history data:', error)
-    }
-  }
-
-  const groupSprintsByProduct = () => {
-    // Group sprints by product
+  // Memoize grouping so it only recalculates when sprints change
+  const sprintsByProduct = useMemo(() => {
     const grouped = {}
     sprints.forEach(sprint => {
       const productId = sprint.product?._id
-      if (productId) {
-        if (!grouped[productId]) {
-          grouped[productId] = []
-        }
-        grouped[productId].push(sprint)
-      }
+      if (!productId) return
+      if (!grouped[productId]) grouped[productId] = []
+      grouped[productId].push(sprint)
     })
+    Object.values(grouped).forEach(arr =>
+      arr.sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+    )
+    return grouped
+  }, [sprints])
 
-    // Sort sprints by date (newest first) within each product
-    Object.keys(grouped).forEach(productId => {
-      grouped[productId].sort((a, b) => new Date(b.startDate) - new Date(a.startDate))
+  const groupTasksByFeature = useCallback((tasks) => {
+    const grouped = {}
+    tasks.forEach(task => {
+      const key = task.feature?.name || 'Unassigned'
+      if (!grouped[key]) grouped[key] = []
+      grouped[key].push(task)
     })
-
-    setSprintsByProduct(grouped)
-  }
+    return grouped
+  }, [])
 
   const toggleProduct = (productId) => {
     setExpandedProducts(prev => ({
@@ -121,75 +100,10 @@ const SprintHistory = () => {
     }))
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'Planning':
-        return 'bg-blue-100 text-blue-700'
-      case 'Active':
-        return 'bg-indigo-100 text-indigo-700'
-      case 'Completed':
-        return 'bg-green-100 text-green-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  const getStatusIcon = (status) => <StatusIcon status={status} />
-
-  const getTaskStatusColor = (status) => {
-    switch (status) {
-      case 'To Do':
-        return 'bg-gray-100 text-gray-700'
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-700'
-      case 'Pending Review':
-        return 'bg-yellow-100 text-yellow-700'
-      case 'Completed':
-        return 'bg-green-100 text-green-700'
-      case 'Blocked':
-        return 'bg-red-100 text-red-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  const getTaskStatusIcon = (status) => <StatusIcon status={status} />
-
-  const getWorkTypeIcon = (workType) => <WorkTypeIcon workType={workType} />
-
-  const getWorkTypeColor = (workType) => {
-    switch (workType) {
-      case 'Frontend':
-        return 'bg-purple-100 text-purple-700'
-      case 'Backend':
-        return 'bg-blue-100 text-blue-700'
-      case 'Database':
-        return 'bg-cyan-100 text-cyan-700'
-      case 'UI/UX Design':
-        return 'bg-pink-100 text-pink-700'
-      case 'DevOps':
-        return 'bg-orange-100 text-orange-700'
-      case 'Testing':
-        return 'bg-teal-100 text-teal-700'
-      case 'Full Stack':
-        return 'bg-indigo-100 text-indigo-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  // Group tasks by feature for a sprint
-  const groupTasksByFeature = (tasks) => {
-    const grouped = {}
-    tasks.forEach(task => {
-      const featureName = task.feature?.name || 'Unassigned'
-      if (!grouped[featureName]) {
-        grouped[featureName] = []
-      }
-      grouped[featureName].push(task)
-    })
-    return grouped
-  }
+  const getStatusIcon     = (s) => <StatusIcon status={s} />
+  const getTaskStatusIcon = (s) => <StatusIcon status={s} />
+  const getWorkTypeIcon   = (w) => <WorkTypeIcon workType={w} />
+  const getTaskStatusColor = getStatusColor
 
   if (loading) {
     return <PageSkeleton variant="table" cards={4} rows={6} />

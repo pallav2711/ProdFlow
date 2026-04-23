@@ -19,6 +19,7 @@ from models.schemas import (
     ManagerDashboardResponse
 )
 from config import settings
+import cache_store
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +50,14 @@ async def init_performance_service():
     """Initialize the performance service — called from main app startup."""
     global performance_service
     backend_api_url = os.getenv('BACKEND_API_URL', 'http://localhost:5000/api')
+    env = os.getenv("ENVIRONMENT", settings.ENVIRONMENT or "development").lower()
+    if env == "production" and "localhost" in backend_api_url:
+        logger.error(
+            "BACKEND_API_URL points to localhost in production (%s). "
+            "Set BACKEND_API_URL on the AI service to your public Node API, e.g. "
+            "https://your-backend.onrender.com/api",
+            backend_api_url,
+        )
     logger.info(f"🔗 Performance service backend URL: {backend_api_url}")
     performance_service = PerformanceAnalysisService(api_base_url=backend_api_url)
     logger.info("✅ AI Performance Analysis Service ready!")
@@ -96,24 +105,69 @@ async def get_teamlead_performance(
         raise HTTPException(status_code=500, detail=_internal_error_message(e))
 
 
-@router.get("/ai/manager-insights", response_model=ManagerDashboardResponse)
+@router.get("/ai/manager-insights")
 async def get_manager_insights(
     start_date: Optional[str] = Query(None),
     end_date: Optional[str] = Query(None),
-    include_predictions: bool = Query(True)
+    include_predictions: bool = Query(True),
+    force: bool = Query(False, description="Force recomputation, ignoring the weekly cache"),
 ):
+    """
+    Returns the weekly-cached manager dashboard.
+
+    The analysis is recomputed at most once per week (every Monday or when the
+    cache is older than 7 days).  Pass ?force=true to trigger an immediate
+    recomputation regardless of cache age.
+    """
     try:
+        # ── 1. Try the cache first (unless force-refresh requested) ──────────
+        if not force:
+            cached = cache_store.load_cached_result()
+            if cached is not None:
+                return JSONResponse(cached)
+
+        # ── 2. Compute fresh analysis ─────────────────────────────────────────
+        logger.info("Cache miss or force=true — running full analysis.")
         svc = _get_performance_service()
         start_dt = datetime.fromisoformat(start_date) if start_date else None
-        end_dt = datetime.fromisoformat(end_date) if end_date else None
-        return await svc.generate_manager_dashboard(start_dt, end_dt, include_predictions)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Invalid date format: {str(e)}")
+        end_dt   = datetime.fromisoformat(end_date)   if end_date   else None
+        result   = await svc.generate_manager_dashboard(start_dt, end_dt, include_predictions)
+
+        # ── 3. Serialise and cache ────────────────────────────────────────────
+        payload = result.dict()
+        # Convert datetime objects to ISO strings so JSON + MongoDB are happy
+        payload = _make_json_safe(payload)
+        cache_store.save_result(payload)
+
+        # Attach fresh cache metadata for the frontend
+        from datetime import timezone, timedelta
+        now = __import__('datetime').datetime.now(timezone.utc)
+        payload["_cache"] = {
+            "cached_at": now.isoformat(),
+            "age_hours": 0.0,
+            "next_refresh": (now + timedelta(days=cache_store.CACHE_MAX_AGE_DAYS)).isoformat(),
+        }
+        return JSONResponse(payload)
+
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=f"Invalid date format: {exc}")
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Manager dashboard error: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=_internal_error_message(e))
+    except Exception as exc:
+        logger.error("Manager dashboard error: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=_internal_error_message(exc))
+
+
+def _make_json_safe(obj):
+    """Recursively convert datetime / date objects to ISO strings."""
+    import datetime as dt
+    if isinstance(obj, dict):
+        return {k: _make_json_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_make_json_safe(v) for v in obj]
+    if isinstance(obj, (dt.datetime, dt.date)):
+        return obj.isoformat()
+    return obj
 
 
 @router.post("/ai/analyze", response_model=ManagerDashboardResponse)

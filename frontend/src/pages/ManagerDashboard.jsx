@@ -14,36 +14,58 @@ const ManagerDashboard = () => {
   
   const [performanceData, setPerformanceData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState(null)
-  const [selectedTab, setSelectedTab] = useState('overview') // overview, developers, teamleads, insights
+  const [selectedTab, setSelectedTab] = useState('overview')
 
   useEffect(() => {
     if (user && user.role === 'Product Manager') {
-      fetchPerformanceData()
+      fetchPerformanceData(false)
     }
   }, [user])
 
-  const fetchPerformanceData = async () => {
+  const fetchPerformanceData = async (force = false) => {
     try {
-      setLoading(true)
-      setError(null)
-      
-      // Call AI Performance Analysis Service
-      const aiServiceUrl = import.meta.env.VITE_AI_PERFORMANCE_URL || import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001'
-      const response = await fetch(`${aiServiceUrl}/ai/manager-insights`)
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch performance data')
+      // Stale-while-revalidate: show cached data instantly, refresh in background
+      const cacheKey = 'perfData_v1'
+      const cached = sessionStorage.getItem(cacheKey)
+      if (cached && !force) {
+        const parsed = JSON.parse(cached)
+        setPerformanceData(parsed)
+        setLoading(false)
+        // If cache is older than 1 hour, silently revalidate in background
+        const ageHours = parsed?._cache?.age_hours ?? 999
+        if (ageHours > 1) {
+          // Background refresh — don't show spinner
+          fetchFresh(cacheKey, false)
+        }
+        return
       }
-      
-      const data = await response.json()
-      setPerformanceData(data)
+
+      force ? setRefreshing(true) : setLoading(true)
+      await fetchFresh(cacheKey, true)
     } catch (error) {
       console.error('Error fetching performance data:', error)
       setError(error.message)
       showToast('Error loading performance analytics', 'error')
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  const fetchFresh = async (cacheKey, showLoader) => {
+    try {
+      const aiServiceUrl = import.meta.env.VITE_AI_PERFORMANCE_URL || import.meta.env.VITE_AI_SERVICE_URL || 'http://localhost:8001'
+      const url = `${aiServiceUrl}/ai/manager-insights${showLoader === false ? '' : (cacheKey && !showLoader ? '' : '')}`
+      const response = await fetch(url)
+      if (!response.ok) throw new Error('Failed to fetch performance data')
+      const data = await response.json()
+      sessionStorage.setItem(cacheKey, JSON.stringify(data))
+      setPerformanceData(data)
+      if (showLoader) showToast('Analysis refreshed successfully', 'success')
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -83,23 +105,68 @@ const ManagerDashboard = () => {
     )
   }
 
+  // Filter out blank-name entries and re-rank so ranks always start at 1
+  const filteredDevelopers = (performanceData?.developers || [])
+    .filter(d => d.developer_name?.trim())
+    .map((d, i) => ({ ...d, rank: i + 1 }))
+  const filteredTeamLeads = (performanceData?.team_leads || [])
+    .filter(tl => tl.team_lead_name?.trim())
+    .map((tl, i) => ({ ...tl, rank: i + 1 }))
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 pt-24">
       <PageHeader
         title="🤖 AI Performance Analytics"
         subtitle="Team performance insights powered by machine learning"
         rightContent={
-          <button
-            onClick={fetchPerformanceData}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </button>
+          <div className="flex items-center gap-3">
+            {performanceData?._cache && (
+              <div className="text-right hidden sm:block">
+                <p className="text-xs text-gray-500">
+                  Last updated: {new Date(performanceData._cache.cached_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </p>
+                <p className="text-xs text-gray-400">
+                  Next refresh: {new Date(performanceData._cache.next_refresh).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                </p>
+              </div>
+            )}
+            <button
+              onClick={() => fetchPerformanceData(true)}
+              disabled={refreshing}
+              title="Force recompute this week's analysis"
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium flex items-center gap-2 disabled:opacity-60"
+            >
+              <svg className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              {refreshing ? 'Refreshing…' : 'Refresh'}
+            </button>
+          </div>
         }
       />
+
+      {/* Cache status banner */}
+      {performanceData?._cache && (
+        <div className="mb-6 flex items-center gap-3 bg-indigo-50 border border-indigo-200 rounded-xl px-4 py-3 text-sm">
+          <span className="text-indigo-500">🗓️</span>
+          <div className="flex-1">
+            <span className="font-semibold text-indigo-800">Weekly snapshot</span>
+            <span className="text-indigo-600 ml-2">
+              — computed {performanceData._cache.age_hours < 1
+                ? 'just now'
+                : `${performanceData._cache.age_hours.toFixed(0)}h ago`}
+              {' '}· auto-refreshes {new Date(performanceData._cache.next_refresh).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
+            </span>
+          </div>
+          <button
+            onClick={() => fetchPerformanceData(true)}
+            disabled={refreshing}
+            className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline disabled:opacity-50"
+          >
+            {refreshing ? 'Running…' : 'Run now'}
+          </button>
+        </div>
+      )}
 
       {(() => {
         const dc = performanceData?.summary?.data_connection
@@ -166,9 +233,9 @@ const ManagerDashboard = () => {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-blue-900">{performanceData.summary.total_developers}</p>
+            <p className="text-3xl font-bold text-blue-900">{filteredDevelopers.length}</p>
             <p className="text-xs text-blue-700 mt-1">
-              {performanceData.summary.high_performers} high performers
+              {filteredDevelopers.filter(d => d.efficiency_score >= 80).length} high performers
             </p>
           </div>
 
@@ -182,7 +249,9 @@ const ManagerDashboard = () => {
               </div>
             </div>
             <p className="text-3xl font-bold text-green-900">
-              {performanceData.summary.avg_developer_efficiency?.toFixed(1)}%
+              {filteredDevelopers.length > 0
+                ? (filteredDevelopers.reduce((s, d) => s + d.efficiency_score, 0) / filteredDevelopers.length).toFixed(1)
+                : '0.0'}%
             </p>
             <p className="text-xs text-green-700 mt-1">Developer performance</p>
           </div>
@@ -196,9 +265,11 @@ const ManagerDashboard = () => {
                 </svg>
               </div>
             </div>
-            <p className="text-3xl font-bold text-purple-900">{performanceData.summary.total_team_leads}</p>
+            <p className="text-3xl font-bold text-purple-900">{filteredTeamLeads.length}</p>
             <p className="text-xs text-purple-700 mt-1">
-              {performanceData.summary.avg_teamlead_efficiency?.toFixed(1)}% avg efficiency
+              {filteredTeamLeads.length > 0
+                ? (filteredTeamLeads.reduce((s, tl) => s + tl.efficiency_score, 0) / filteredTeamLeads.length).toFixed(1)
+                : '0.0'}% avg efficiency
             </p>
           </div>
 
@@ -242,7 +313,7 @@ const ManagerDashboard = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Developers ({performanceData?.developers?.length || 0})
+              Developers ({filteredDevelopers.length})
             </button>
             <button
               onClick={() => setSelectedTab('teamleads')}
@@ -252,17 +323,7 @@ const ManagerDashboard = () => {
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               }`}
             >
-              Team Leads ({performanceData?.team_leads?.length || 0})
-            </button>
-            <button
-              onClick={() => setSelectedTab('insights')}
-              className={`px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
-                selectedTab === 'insights'
-                  ? 'border-indigo-600 text-indigo-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
-            >
-              AI Insights ({performanceData?.team_insights?.length || 0})
+              Team Leads ({filteredTeamLeads.length})
             </button>
           </nav>
         </div>
@@ -270,26 +331,22 @@ const ManagerDashboard = () => {
 
       {/* Tab Content */}
       {selectedTab === 'overview' && (
-        <OverviewTab performanceData={performanceData} />
+        <OverviewTab developers={filteredDevelopers} teamLeads={filteredTeamLeads} performanceData={performanceData} />
       )}
       
       {selectedTab === 'developers' && (
-        <DevelopersTab developers={performanceData?.developers || []} />
+        <DevelopersTab developers={filteredDevelopers} />
       )}
       
       {selectedTab === 'teamleads' && (
-        <TeamLeadsTab teamLeads={performanceData?.team_leads || []} />
-      )}
-      
-      {selectedTab === 'insights' && (
-        <InsightsTab insights={performanceData?.team_insights || []} />
+        <TeamLeadsTab teamLeads={filteredTeamLeads} />
       )}
     </div>
   )
 }
 
 // Overview Tab Component
-function OverviewTab({ performanceData }) {
+function OverviewTab({ developers, teamLeads, performanceData }) {
   return (
     <div className="space-y-6">
       {/* Top Performers */}
@@ -301,7 +358,7 @@ function OverviewTab({ performanceData }) {
           Top Performers
         </h3>
         <div className="grid md:grid-cols-3 gap-4">
-          {performanceData?.developers?.slice(0, 3).map((dev, index) => (
+          {developers.slice(0, 3).map((dev, index) => (
             <div key={dev.developer_id} className="bg-gradient-to-br from-yellow-50 to-orange-50 p-4 rounded-lg border border-yellow-200">
               <div className="flex items-center gap-3 mb-2">
                 <div className="bg-yellow-500 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">
@@ -327,9 +384,9 @@ function OverviewTab({ performanceData }) {
           <h3 className="text-lg font-bold text-gray-900 mb-4">Performance Distribution</h3>
           <div className="space-y-3">
             {['High Performer', 'Average Performer', 'Needs Improvement'].map((cluster) => {
-              const count = performanceData?.developers?.filter(d => d.performance_cluster === cluster).length || 0
-              const percentage = performanceData?.developers?.length > 0 
-                ? (count / performanceData.developers.length * 100).toFixed(0)
+              const count = developers.filter(d => d.performance_cluster === cluster).length
+              const percentage = developers.length > 0
+                ? (count / developers.length * 100).toFixed(0)
                 : 0
               
               return (
@@ -357,7 +414,7 @@ function OverviewTab({ performanceData }) {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
           <h3 className="text-lg font-bold text-gray-900 mb-4">Team Lead Performance</h3>
           <div className="space-y-3">
-            {performanceData?.team_leads?.slice(0, 3).map((tl) => (
+            {teamLeads.slice(0, 3).map((tl) => (
               <div key={tl.team_lead_id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
                   <p className="font-semibold text-gray-900">{tl.team_lead_name}</p>
@@ -493,70 +550,5 @@ function TeamLeadsTab({ teamLeads }) {
   )
 }
 
-// Insights Tab Component
-function InsightsTab({ insights }) {
-  const getInsightIcon = (type) => {
-    switch (type) {
-      case 'positive':
-        return (
-          <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-          </svg>
-        )
-      case 'warning':
-        return (
-          <svg className="w-5 h-5 text-yellow-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-          </svg>
-        )
-      case 'recommendation':
-        return (
-          <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-          </svg>
-        )
-      default:
-        return null
-    }
-  }
-
-  const getInsightColor = (type) => {
-    switch (type) {
-      case 'positive':
-        return 'bg-green-50 border-green-200'
-      case 'warning':
-        return 'bg-yellow-50 border-yellow-200'
-      case 'recommendation':
-        return 'bg-blue-50 border-blue-200'
-      default:
-        return 'bg-gray-50 border-gray-200'
-    }
-  }
-
-  return (
-    <div className="space-y-4">
-      {insights.map((insight, index) => (
-        <div key={index} className={`border rounded-lg p-4 ${getInsightColor(insight.insight_type)}`}>
-          <div className="flex items-start gap-3">
-            {getInsightIcon(insight.insight_type)}
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-xs font-semibold text-gray-600 uppercase">{insight.category}</span>
-                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  insight.priority === 'high' ? 'bg-red-100 text-red-700' :
-                  insight.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                  'bg-gray-100 text-gray-700'
-                }`}>
-                  {insight.priority}
-                </span>
-              </div>
-              <p className="text-sm text-gray-900 font-medium">{insight.message}</p>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  )
-}
-
 export default ManagerDashboard
+

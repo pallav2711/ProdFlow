@@ -74,6 +74,13 @@ class TeamLeadMetricsCalculator:
         if sprint_df.empty:
             return pd.DataFrame()
         
+        # Filter out sprints with no team lead (blank/empty/NaN IDs produce blank name entries)
+        sprint_df = sprint_df.copy()
+        sprint_df['created_by'] = sprint_df['created_by'].fillna('').astype(str).str.strip()
+        sprint_df = sprint_df[sprint_df['created_by'] != '']
+        if sprint_df.empty:
+            return pd.DataFrame()
+        
         # Group sprints by team lead
         tl_groups = sprint_df.groupby('created_by')
         

@@ -15,7 +15,7 @@ from ai_engine.clustering import DeveloperClusteringEngine
 from ai_engine.risk_prediction import SprintRiskPredictor
 from insights_generator.insights import InsightsGenerator
 from models.schemas import (
-    DeveloperMetrics, TeamLeadMetrics, TeamInsight,
+    DeveloperMetrics, TeamLeadMetrics,
     SprintRiskPrediction, ManagerDashboardResponse,
     DeveloperPerformanceResponse, TeamLeadPerformanceResponse
 )
@@ -264,12 +264,6 @@ class PerformanceAnalysisService:
         developers = self._convert_to_developer_metrics(dev_metrics_df)
         team_leads = self._convert_to_teamlead_metrics(tl_metrics_df)
         
-        # Generate all insights
-        all_insights = self.insights_generator.generate_all_insights(
-            dev_metrics_df, tl_metrics_df, sprint_df, task_df
-        )
-        insights_models = [TeamInsight(**insight) for insight in all_insights]
-        
         # Sprint risk predictions
         sprint_risks = []
         if include_predictions and settings.ML_RISK_PREDICTION_ENABLED:
@@ -328,7 +322,7 @@ class PerformanceAnalysisService:
         return ManagerDashboardResponse(
             developers=developers,
             team_leads=team_leads,
-            team_insights=insights_models,
+            team_insights=[],
             sprint_risks=sprint_risks if sprint_risks else None,
             summary=summary,
             data_period=data_period,
@@ -379,12 +373,15 @@ class PerformanceAnalysisService:
         uid_col = "user_id" if "user_id" in user_df.columns else None
         name_col = "name" if "name" in user_df.columns else None
         if uid_col and name_col:
-            user_map = dict(zip(user_df[uid_col].astype(str), user_df[name_col].fillna("Unknown").astype(str)))
+            user_map = dict(zip(user_df[uid_col].astype(str), user_df[name_col].fillna("").astype(str)))
         else:
             user_map = {}
-        metrics_df[id_column.replace("_id", "_name")] = metrics_df[id_column].astype(str).map(
+        name_column = id_column.replace("_id", "_name")
+        metrics_df[name_column] = metrics_df[id_column].astype(str).map(
             lambda x: user_map.get(x, x)
         )
+        # Drop rows where the resolved name is blank or empty (unresolvable IDs)
+        metrics_df = metrics_df[metrics_df[name_column].str.strip() != '']
         
         return metrics_df
     

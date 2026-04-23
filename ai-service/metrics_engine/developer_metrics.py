@@ -65,6 +65,13 @@ class DeveloperMetricsCalculator:
         if task_df.empty:
             return pd.DataFrame()
         
+        # Filter out tasks with no assigned developer (blank/empty/NaN IDs produce blank name entries)
+        task_df = task_df.copy()
+        task_df['assigned_developer'] = task_df['assigned_developer'].fillna('').astype(str).str.strip()
+        task_df = task_df[task_df['assigned_developer'] != '']
+        if task_df.empty:
+            return pd.DataFrame()
+        
         # Group by developer
         developer_groups = task_df.groupby('assigned_developer')
         
@@ -154,38 +161,31 @@ class DeveloperMetricsCalculator:
     
     def _calculate_completion_speed(self, dev_tasks: pd.DataFrame) -> float:
         """
-        Calculate completion speed score
-        
-        Formula: (Estimated Time / Actual Time) * 100
-        Faster completion = higher score
+        Completion speed score using weighted percentile approach.
+        Penalises large overruns more than small ones (log-scale ratio).
         """
         completed_tasks = dev_tasks[
-            (dev_tasks['status'] == 'Completed') & 
+            (dev_tasks['status'] == 'Completed') &
             (dev_tasks['actual_hours'].notna()) &
-            (dev_tasks['actual_hours'] > 0)
+            (dev_tasks['actual_hours'] > 0) &
+            (dev_tasks['estimated_hours'] > 0)
         ]
-        
+
         if completed_tasks.empty:
-            return 50.0  # Neutral score if no data
-        
-        # Calculate speed ratio for each task
-        speed_ratios = completed_tasks['estimated_hours'] / completed_tasks['actual_hours']
-        
-        # Cap extreme values
-        speed_ratios = speed_ratios.clip(lower=0.5, upper=2.0)
-        
-        # Convert to score (1.0 ratio = 100 points)
-        avg_speed_ratio = speed_ratios.mean()
-        
-        # Score calculation
-        if avg_speed_ratio >= 1.0:
-            # Finished faster than estimated
-            score = 100 + (avg_speed_ratio - 1.0) * 50
-        else:
-            # Took longer than estimated
-            score = avg_speed_ratio * 100
-        
-        return min(100, max(0, score))
+            return 50.0
+
+        # log-ratio: positive = faster than estimated, negative = slower
+        log_ratios = np.log(
+            completed_tasks['estimated_hours'].values /
+            completed_tasks['actual_hours'].values
+        )
+        # clip to [-1, 1] (≈ 2.7x overrun / underrun)
+        log_ratios = np.clip(log_ratios, -1.0, 1.0)
+        avg_log_ratio = float(np.mean(log_ratios))
+
+        # map [-1, 1] → [20, 100]
+        score = 60.0 + avg_log_ratio * 40.0
+        return float(np.clip(score, 20.0, 100.0))
     
     def _calculate_code_quality(
         self,
@@ -193,37 +193,22 @@ class DeveloperMetricsCalculator:
         review_df: pd.DataFrame
     ) -> float:
         """
-        Calculate code quality score based on review cycles
-        
-        Fewer review cycles = better code quality
+        Code quality score: combines review cycle count with first-time approval rate.
+        Uses a smooth exponential decay so every extra cycle meaningfully lowers the score.
         """
         if dev_tasks.empty:
             return 50.0
-        
-        avg_review_cycles = dev_tasks['review_count'].mean()
-        
-        # Score calculation
-        # 1 review = 100 points
-        # 2 reviews = 80 points
-        # 3 reviews = 60 points
-        # 4+ reviews = 40 points
-        
-        if avg_review_cycles <= 1.0:
-            score = 100
-        elif avg_review_cycles <= 1.5:
-            score = 90
-        elif avg_review_cycles <= 2.0:
-            score = 80
-        elif avg_review_cycles <= 2.5:
-            score = 70
-        elif avg_review_cycles <= 3.0:
-            score = 60
-        elif avg_review_cycles <= 4.0:
-            score = 50
-        else:
-            score = 40
-        
-        return score
+
+        avg_cycles = float(dev_tasks['review_count'].mean())
+        tasks_completed = len(dev_tasks[dev_tasks['status'] == 'Completed'])
+        first_time = len(dev_tasks[dev_tasks['review_count'] <= 1])
+        fta_rate = first_time / tasks_completed if tasks_completed > 0 else 0.5
+
+        # Exponential decay: score = 100 * e^(-0.35 * (cycles - 1))
+        cycle_score = float(np.clip(100.0 * np.exp(-0.35 * max(avg_cycles - 1.0, 0)), 30.0, 100.0))
+        fta_score = fta_rate * 100.0
+
+        return round(0.6 * cycle_score + 0.4 * fta_score, 2)
     
     def _calculate_deadline_consistency(
         self,
@@ -298,44 +283,30 @@ class DeveloperMetricsCalculator:
         window_size: int = 3
     ) -> str:
         """
-        Calculate performance trend for a developer
-        
-        Args:
-            dev_id: Developer ID
-            task_df: Task data
-            review_df: Review data
-            sprint_df: Sprint data
-            window_size: Number of recent sprints to analyze
-            
-        Returns:
-            Trend: "improving", "declining", or "stable"
+        Trend via linear regression over per-sprint efficiency scores.
+        Requires at least 4 sprints of data for a meaningful signal.
         """
-        dev_tasks = task_df[task_df['assigned_developer'] == dev_id]
-        
-        if len(dev_tasks) < window_size * 2:
+        dev_tasks = task_df[task_df['assigned_developer'] == dev_id].copy()
+        if dev_tasks.empty or sprint_df.empty:
             return "stable"
-        
-        # Sort by sprint
-        dev_tasks = dev_tasks.sort_values('sprint_id')
-        
-        # Split into recent and previous periods
-        mid_point = len(dev_tasks) // 2
-        previous_tasks = dev_tasks.iloc[:mid_point]
-        recent_tasks = dev_tasks.iloc[mid_point:]
-        
-        # Calculate scores for both periods
-        prev_metrics = self._calculate_single_developer_metrics(
-            dev_id, previous_tasks, review_df, sprint_df
-        )
-        recent_metrics = self._calculate_single_developer_metrics(
-            dev_id, recent_tasks, review_df, sprint_df
-        )
-        
-        score_diff = recent_metrics['efficiency_score'] - prev_metrics['efficiency_score']
-        
-        if score_diff > 5:
+
+        # compute per-sprint efficiency
+        sprint_scores = []
+        for _, sp in sprint_df.sort_values('sprint_id').iterrows():
+            sp_tasks = dev_tasks[dev_tasks['sprint_id'] == sp['sprint_id']]
+            if sp_tasks.empty:
+                continue
+            m = self._calculate_single_developer_metrics(dev_id, sp_tasks, review_df, sprint_df)
+            sprint_scores.append(m['efficiency_score'])
+
+        if len(sprint_scores) < 4:
+            return "stable"
+
+        x = np.arange(len(sprint_scores), dtype=float)
+        slope = float(np.polyfit(x, sprint_scores, 1)[0])
+
+        if slope > 2.5:
             return "improving"
-        elif score_diff < -5:
+        elif slope < -2.5:
             return "declining"
-        else:
-            return "stable"
+        return "stable"

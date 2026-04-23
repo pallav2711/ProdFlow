@@ -1,220 +1,149 @@
-import axios from 'axios';
-import { normalizeApiError } from '../utils/apiError';
+/**
+ * Axios instance
+ *
+ * CHANGES:
+ * - Refresh token is now an httpOnly cookie — never read/written from JS.
+ * - POST /auth/refresh sends no body; the browser attaches the cookie automatically.
+ * - Removed refreshToken from localStorage entirely.
+ * - Single interceptor here — the duplicate in AuthContext.jsx has been removed.
+ * - 401 handling: one retry via /auth/refresh, then redirect to /login.
+ */
 
-// Create axios instance with optimized configuration
+import axios from 'axios'
+import { normalizeApiError } from '../utils/apiError'
+
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
-  timeout: 30000, // Increased timeout for better reliability
+  baseURL:      import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api',
+  timeout:      30000,
+  withCredentials: true,   // send httpOnly cookies on every request
   headers: {
     'Content-Type': 'application/json',
-    'Accept': 'application/json',
+    Accept:         'application/json',
   },
-  // Enable request/response compression
-  decompress: true,
-  // Connection keep-alive for better performance
+  decompress:   true,
   maxRedirects: 3,
-  // Retry configuration for unreliable free hosting
-  validateStatus: (status) => status < 500, // Don't throw on 4xx errors
-});
+  validateStatus: (s) => s < 500,
+})
 
-// Request queue for handling concurrent requests
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach(prom => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  
-  failedQueue = [];
-};
-
-// Add request interceptor
+// ── request interceptor ───────────────────────────────────────────────────────
 api.interceptors.request.use(
   (config) => {
-    // Add auth token
-    const accessToken = localStorage.getItem('accessToken');
-    const oldToken = localStorage.getItem('token') || sessionStorage.getItem('token');
-    
-    if (accessToken) {
-      config.headers.Authorization = `Bearer ${accessToken}`;
-    } else if (oldToken) {
-      config.headers.Authorization = `Bearer ${oldToken}`;
-    }
-
-    // Add request timestamp for performance monitoring
-    config.metadata = { startTime: Date.now() };
-    
-    // Add request ID for tracking (now properly configured in CORS)
-    config.headers['X-Request-ID'] = Math.random().toString(36).substring(7);
-    
-    return config;
+    const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken')
+    if (token) config.headers.Authorization = `Bearer ${token}`
+    config.metadata = { startTime: Date.now() }
+    config.headers['X-Request-ID'] = Math.random().toString(36).slice(2)
+    return config
   },
-  (error) => {
-    console.error('Request interceptor error:', error);
-    return Promise.reject(error);
-  }
-);
+  (err) => Promise.reject(err)
+)
 
-// Add response interceptor with enhanced error handling
+// ── response interceptor ──────────────────────────────────────────────────────
+let isRefreshing = false
+let queue = []
+
+const flushQueue = (err, token = null) => {
+  queue.forEach(p => err ? p.reject(err) : p.resolve(token))
+  queue = []
+}
+
 api.interceptors.response.use(
-  (response) => {
-    // Log response time in development
-    if (import.meta.env.DEV && response.config.metadata) {
-      const duration = Date.now() - response.config.metadata.startTime;
-      console.log(`API ${response.config.method?.toUpperCase()} ${response.config.url}: ${duration}ms`);
+  (res) => {
+    if (import.meta.env.DEV && res.config.metadata) {
+      const ms = Date.now() - res.config.metadata.startTime
+      console.log(`API ${res.config.method?.toUpperCase()} ${res.config.url}: ${ms}ms`)
     }
-
-    return response;
+    return res
   },
-  async (error) => {
-    const originalRequest = error.config;
+  async (err) => {
+    const original = err.config
 
-    // Handle network errors with retry logic for free hosting
-    if (error.code === 'NETWORK_ERROR' || error.code === 'ECONNABORTED' || error.code === 'ERR_NETWORK') {
-      if (!originalRequest._retry && (originalRequest._retryCount || 0) < 3) {
-        originalRequest._retry = true;
-        originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
-        
-        console.log(`Retrying request (${originalRequest._retryCount}/3):`, originalRequest.url);
-        
-        // Exponential backoff with jitter
-        const delay = Math.min(1000 * Math.pow(2, originalRequest._retryCount - 1), 10000) + Math.random() * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-        
-        return api(originalRequest);
-      }
-    }
+    // ── 401: attempt one silent refresh via httpOnly cookie ──────────────────
+    if (err.response?.status === 401 && !original._retry) {
+      original._retry = true
 
-    // Handle 401 errors (authentication) with token refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      console.log('401 error detected, attempting token refresh...');
-      
       if (isRefreshing) {
-        // If already refreshing, queue the request
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        }).then(token => {
-          originalRequest.headers.Authorization = `Bearer ${token}`;
-          return api(originalRequest);
-        }).catch(err => {
-          return Promise.reject(err);
-        });
+        return new Promise((resolve, reject) => queue.push({ resolve, reject }))
+          .then(token => {
+            original.headers.Authorization = `Bearer ${token}`
+            return api(original)
+          })
       }
 
-      originalRequest._retry = true;
-      isRefreshing = true;
-
+      isRefreshing = true
       try {
-        const refreshToken = localStorage.getItem('refreshToken');
-        if (refreshToken) {
-          console.log('Attempting to refresh token...');
-          const response = await api.post('/auth/refresh', { refreshToken });
-          const { accessToken, refreshToken: nextRefreshToken } = response.data;
-          
-          localStorage.setItem('accessToken', accessToken);
-          if (nextRefreshToken) {
-            localStorage.setItem('refreshToken', nextRefreshToken);
-          }
-          api.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
-          
-          processQueue(null, accessToken);
-          
-          originalRequest.headers.Authorization = `Bearer ${accessToken}`;
-          return api(originalRequest);
+        // No body needed — browser sends the httpOnly cookie automatically
+        const { data } = await api.post('/auth/refresh')
+        const newToken = data?.data?.accessToken
+        if (!newToken) throw new Error('No access token in refresh response')
+
+        // Persist in the same storage the user originally chose
+        if (localStorage.getItem('accessToken')) {
+          localStorage.setItem('accessToken', newToken)
         } else {
-          console.log('No refresh token available');
-          throw new Error('No refresh token available');
+          sessionStorage.setItem('accessToken', newToken)
         }
-      } catch (refreshError) {
-        console.error('Token refresh failed:', refreshError);
-        processQueue(refreshError, null);
-        
-        // Clear tokens and redirect to login
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        localStorage.removeItem('token');
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('accessToken');
-        
-        // Only redirect if not already on login page
-        if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/register')) {
-          console.log('Redirecting to login due to authentication failure');
-          window.location.href = '/login';
+
+        api.defaults.headers.common.Authorization = `Bearer ${newToken}`
+        flushQueue(null, newToken)
+        original.headers.Authorization = `Bearer ${newToken}`
+        return api(original)
+      } catch (refreshErr) {
+        flushQueue(refreshErr)
+        localStorage.removeItem('accessToken')
+        sessionStorage.removeItem('accessToken')
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login'
         }
-        
-        return Promise.reject(refreshError);
+        return Promise.reject(refreshErr)
       } finally {
-        isRefreshing = false;
+        isRefreshing = false
       }
     }
 
-    // Handle 429 (rate limiting) with exponential backoff
-    if (error.response?.status === 429) {
-      const retryAfter = parseInt(error.response.headers['retry-after']) || 1;
-      console.log(`Rate limited. Retrying after ${retryAfter} seconds...`);
-      
-      await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
-      return api(originalRequest);
+    // ── 429: honour Retry-After header ───────────────────────────────────────
+    if (err.response?.status === 429) {
+      const wait = (parseInt(err.response.headers['retry-after']) || 5) * 1000
+      await new Promise(r => setTimeout(r, wait))
+      return api(original)
     }
 
-    // Handle 5xx errors with retry
-    if (error.response?.status >= 500 && (originalRequest._serverRetryCount || 0) < 2) {
-      originalRequest._serverRetryCount = (originalRequest._serverRetryCount || 0) + 1;
-      
-      console.log(`Server error, retrying (${originalRequest._serverRetryCount}/2):`, originalRequest.url);
-      
-      // Wait before retrying server errors
-      await new Promise(resolve => setTimeout(resolve, 2000 * originalRequest._serverRetryCount));
-      return api(originalRequest);
+    // ── network errors: up to 3 retries with exponential back-off ────────────
+    const isNetworkErr = !err.response && (err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED')
+    if (isNetworkErr && (original._retryCount || 0) < 3) {
+      original._retryCount = (original._retryCount || 0) + 1
+      const delay = Math.min(1000 * 2 ** (original._retryCount - 1), 8000) + Math.random() * 500
+      await new Promise(r => setTimeout(r, delay))
+      return api(original)
     }
 
-    // Log errors in development
-    const normalizedError = normalizeApiError(error);
-    error.normalizedError = normalizedError;
-
-    if (import.meta.env.DEV) {
-      console.error('API Error:', {
-        url: error.config?.url,
-        method: error.config?.method,
-        status: normalizedError.status,
-        code: normalizedError.code,
-        message: normalizedError.message,
-        data: error.response?.data,
-        requestId: normalizedError.requestId
-      });
-    }
-
-    return Promise.reject(error);
+    err.normalizedError = normalizeApiError(err)
+    return Promise.reject(err)
   }
-);
+)
 
-// Utility function to preload critical data
-export const preloadCriticalData = async () => {
-  try {
-    // Preload user data if authenticated
-    const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
-    if (token) {
-      await api.get('/auth/me');
-    }
-  } catch (error) {
-    console.log('Preload failed:', error.message);
-  }
-};
-
-// Health check function
 export const checkApiHealth = async () => {
   try {
-    const response = await api.get('/health/status', { timeout: 5000 });
-    return response.data;
-  } catch (error) {
-    console.error('Health check failed:', error.message);
-    return { status: 'error', message: error.message };
+    const res = await api.get('/health/status', { timeout: 5000 })
+    return res.data
+  } catch (e) {
+    return { status: 'error', message: e.message }
   }
-};
+}
 
-export default api;
+/**
+ * Preload critical data on app start
+ * This can be used to warm up caches or prefetch essential data
+ */
+export const preloadCriticalData = async () => {
+  // Optional: Preload user data, products, etc. when app starts
+  // For now, this is a no-op but can be extended as needed
+  try {
+    // Example: await api.get('/products?limit=10')
+    // Example: await api.get('/sprints?limit=10')
+  } catch (error) {
+    // Silently fail - preloading is optional
+    console.debug('Preload failed:', error.message)
+  }
+}
+
+export default api

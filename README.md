@@ -1,435 +1,564 @@
-# 🚀 ProdFlow AI - Sprint Planning SaaS with AI Predictions
+# 🚀 ProdFlow AI
+
+**AI-Powered Sprint Planning & Team Performance Analytics Platform**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org/)
-[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://python.org/)
-[![MongoDB](https://img.shields.io/badge/MongoDB-5.0+-green.svg)](https://mongodb.com/)
-[![Docker](https://img.shields.io/badge/Docker-Ready-blue.svg)](https://docker.com/)
+[![Node.js](https://img.shields.io/badge/Node.js-16+-green.svg)](https://nodejs.org/)
+[![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)](https://www.python.org/)
+[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org/)
 
-**ProdFlow AI** is a comprehensive Sprint Planning SaaS platform that leverages advanced AI/ML models to predict sprint success rates and optimize team productivity. Built with modern technologies and designed for scalability.
+> A comprehensive SaaS platform that combines sprint planning, task management, and AI-powered analytics to help development teams optimize their workflow and predict sprint success rates.
 
-## ✨ Key Features
+---
 
-### 🎯 Core Functionality
-- **Team-Based Project Management**: Private projects with role-based access control
-- **Sprint Planning**: Create, manage, and track sprints with AI-powered insights
-- **Task Management**: Assign tasks with work type specialization and approval workflows
-- **AI Predictions**: Heuristic analysis predicts sprint success with 85% accuracy
-- **Real-time Dashboard**: Comprehensive analytics and progress tracking
+## 📋 Table of Contents
 
-### 🤖 AI-Powered Features
-- **Sprint Success Prediction**: Heuristic analysis model with 85% accuracy
-- **Risk Factor Analysis**: Identify potential blockers and bottlenecks
-- **Smart Recommendations**: Actionable insights for sprint optimization
-- **Workload Balancing**: AI-driven task distribution recommendations
+- [Overview](#-overview)
+- [Features](#-features)
+- [Architecture](#-architecture)
+- [Tech Stack](#-tech-stack)
+- [Getting Started](#-getting-started)
+- [Installation](#-installation)
+- [Configuration](#-configuration)
+- [Running the Application](#-running-the-application)
+- [Project Structure](#-project-structure)
+- [API Documentation](#-api-documentation)
+- [Deployment](#-deployment)
+- [Contributing](#-contributing)
+- [License](#-license)
 
-### 👥 Role-Based System
-- **Product Manager**: Create products, manage teams, oversee sprints
-- **Team Lead**: Review tasks, approve completions, manage team workflow
-- **Developer**: Complete assigned tasks, submit for review, track progress
+---
 
-### 🔧 Technical Features
-- **Responsive Design**: Modern glassmorphic UI with Tailwind CSS
-- **Real-time Updates**: Live sprint and task status synchronization
-- **Secure Authentication**: JWT-based session management
-- **RESTful API**: Comprehensive backend API with validation
-- **Docker Ready**: Complete containerization for easy deployment
+## 🎯 Overview
+
+ProdFlow AI is a full-stack application designed to streamline agile development workflows. It provides:
+
+- **Sprint Planning**: Create and manage sprints with AI-powered success predictions
+- **Task Management**: Assign, track, and review development tasks
+- **Team Analytics**: Real-time insights into developer performance and team productivity
+- **AI Predictions**: Machine learning models that predict sprint success probability
+- **Role-Based Access**: Separate dashboards for Product Managers, Team Leads, and Developers
+
+---
+
+## ✨ Features
+
+### For Product Managers
+- 📊 Create products and define feature backlogs
+- 👥 Invite team members and manage project access
+- 📈 View comprehensive analytics and performance metrics
+- 🎯 Prioritize features based on business value
+
+### For Team Leads
+- 🗓️ Plan sprints with AI-powered success predictions
+- ✅ Assign tasks to developers
+- 👀 Review and approve completed work
+- 📉 Monitor team performance and bottlenecks
+
+### For Developers
+- 📝 View assigned tasks across all sprints
+- ⏱️ Track time and update task status
+- 🔄 Submit work for review
+- 📊 View personal performance metrics
+
+### AI-Powered Features
+- 🤖 Sprint success probability prediction
+- 📊 Developer performance clustering
+- 🎯 Risk identification and mitigation suggestions
+- 📈 Trend analysis and forecasting
+
+---
 
 ## 🏗️ Architecture
 
-### Technology Stack
+ProdFlow AI consists of three microservices:
 
-#### Frontend
-- **React 18** with modern hooks and context
-- **Vite** for fast development and building
-- **Tailwind CSS** for responsive, modern UI
-- **Axios** for API communication
-- **React Router** for client-side routing
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         CLIENT                              │
+│                    (React + Vite)                           │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    BACKEND API                              │
+│              (Node.js + Express + MongoDB)                  │
+│  • Authentication & Authorization                           │
+│  • Sprint & Task Management                                 │
+│  • Team & Product Management                                │
+│  • Analytics Data Aggregation                               │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ▼
+┌─────────────────────────────────────────────────────────────┐
+│                    AI SERVICE                               │
+│              (Python + FastAPI + Scikit-learn)              │
+│  • Sprint Success Prediction                                │
+│  • Developer Performance Analysis                           │
+│  • Risk Assessment                                          │
+│  • Insights Generation                                      │
+└─────────────────────────────────────────────────────────────┘
+```
 
-#### Backend
-- **Node.js** with Express.js framework
-- **MongoDB** with Mongoose ODM
-- **JWT** for authentication and authorization
-- **bcryptjs** for password hashing
-- **Express Validator** for input validation
+### Service Communication
+- **Frontend ↔ Backend**: RESTful API with JWT authentication
+- **Backend ↔ AI Service**: HTTP API with API key authentication
+- **Data Flow**: Frontend → Backend → AI Service → Backend → Frontend
 
-#### AI Service
-- **Python 3.10** with FastAPI framework
-- **Heuristic Analysis** for sprint prediction
-- **Rule-based Logic** for risk assessment
-- **Pydantic** for data validation
+---
 
-#### Database
-- **MongoDB** for document storage
-- **Optimized indexes** for performance
-- **Data validation** at schema level
+## 🛠️ Tech Stack
 
-## 🚀 Quick Start
+### Frontend
+- **Framework**: React 18
+- **Build Tool**: Vite
+- **Styling**: Tailwind CSS
+- **Routing**: React Router v6
+- **HTTP Client**: Axios
+- **State Management**: React Context API
+
+### Backend
+- **Runtime**: Node.js 16+
+- **Framework**: Express.js
+- **Database**: MongoDB with Mongoose ODM
+- **Authentication**: JWT (JSON Web Tokens)
+- **Security**: Helmet, CORS, Rate Limiting
+- **Validation**: Express Validator
+
+### AI Service
+- **Language**: Python 3.9+
+- **Framework**: FastAPI
+- **ML Libraries**: Scikit-learn, Pandas, NumPy
+- **Data Processing**: Pandas, NumPy
+- **Caching**: In-memory / Redis
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** 16+ and npm 8+
-- **Python** 3.10+ with pip
-- **MongoDB** 5.0+ (local or Atlas)
-- Git
 
-### ⚡ Automated Setup (Recommended)
+Before you begin, ensure you have the following installed:
 
-#### Step 1: Check Prerequisites
+- **Node.js** 16+ and npm ([Download](https://nodejs.org/))
+- **Python** 3.9+ and pip ([Download](https://www.python.org/))
+- **MongoDB** 5.0+ ([Download](https://www.mongodb.com/try/download/community) or use [MongoDB Atlas](https://www.mongodb.com/cloud/atlas))
+- **Git** ([Download](https://git-scm.com/))
+
+### Quick Start
+
 ```bash
-check-prerequisites.bat
+# Clone the repository
+git clone https://github.com/yourusername/prodflow-ai.git
+cd prodflow-ai
+
+# Install all dependencies
+npm run install:all
+
+# Configure environment variables (see Configuration section)
+cp .env.example.backend backend/.env
+cp .env.example.frontend frontend/.env
+cp .env.example.ai ai-service/.env
+
+# Start all services
+npm run dev:all
 ```
 
-#### Step 2: Start All Services
+---
+
+## 📦 Installation
+
+### 1. Clone the Repository
+
 ```bash
-start-all-services.bat
+git clone https://github.com/yourusername/prodflow-ai.git
+cd prodflow-ai
 ```
 
-This will automatically:
-- ✅ Check MongoDB status
-- ✅ Install all dependencies
-- ✅ Start Backend API (Port 5000)
-- ✅ Start Frontend (Port 5173)
-- ✅ Start AI Sprint Service (Port 8000)
-- ✅ Start AI Performance Service (Port 8001)
-- ✅ Open application in browser
+### 2. Install Backend Dependencies
 
-#### Step 3: Stop All Services
 ```bash
-stop-all-services.bat
-```
-
-### 📋 Manual Setup
-
-#### 1. Install Dependencies
-```bash
-# Backend
 cd backend
 npm install
+cd ..
+```
 
-# Frontend
+### 3. Install Frontend Dependencies
+
+```bash
 cd frontend
 npm install
+cd ..
+```
 
-# AI Services
+### 4. Install AI Service Dependencies
+
+```bash
 cd ai-service
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+# macOS/Linux:
+source venv/bin/activate
+
 pip install -r requirements.txt
-pip install -r requirements-performance.txt
+cd ..
 ```
 
-#### 2. Configure Environment
+---
+
+## ⚙️ Configuration
+
+### Backend Configuration
+
+1. Copy the example environment file:
 ```bash
-# Copy example environment files
-copy backend\.env.example backend\.env
-copy frontend\.env.example frontend\.env
-copy ai-service\.env.example ai-service\.env
+cp .env.example.backend backend/.env
 ```
 
-#### 3. Start MongoDB
-```bash
-mongod
-# Or if installed as service:
-net start MongoDB
+2. Edit `backend/.env` and configure:
+
+```env
+# Database
+MONGODB_URI=mongodb://localhost:27017/prodflow-ai
+
+# Security (Generate secure secrets!)
+JWT_SECRET=your_super_secret_jwt_key_here
+JWT_REFRESH_SECRET=your_super_secret_refresh_token_key_here
+
+# AI Service
+AI_SERVICE_URL=http://localhost:8000
+AI_SERVICE_API_KEY=your_ai_service_api_key_here
+
+# CORS
+FRONTEND_URL=http://localhost:5173
 ```
 
-#### 4. Start Services (in separate terminals)
+**Generate Secure Secrets:**
 ```bash
-# Terminal 1: Backend
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+### Frontend Configuration
+
+1. Copy the example environment file:
+```bash
+cp .env.example.frontend frontend/.env
+```
+
+2. Edit `frontend/.env`:
+
+```env
+VITE_API_BASE_URL=http://localhost:5000/api
+VITE_AI_SERVICE_URL=http://localhost:8000
+```
+
+### AI Service Configuration
+
+1. Copy the example environment file:
+```bash
+cp .env.example.ai ai-service/.env
+```
+
+2. Edit `ai-service/.env`:
+
+```env
+BACKEND_API_URL=http://localhost:5000/api
+API_KEY=your_ai_service_api_key_here  # Must match backend
+```
+
+---
+
+## 🏃 Running the Application
+
+### Development Mode
+
+#### Option 1: Run All Services Together
+
+```bash
+# From project root
+npm run dev:all
+```
+
+#### Option 2: Run Services Individually
+
+**Terminal 1 - Backend:**
+```bash
 cd backend
 npm run dev
+```
 
-# Terminal 2: Frontend
+**Terminal 2 - Frontend:**
+```bash
 cd frontend
 npm run dev
+```
 
-# Terminal 3: AI Sprint Service
+**Terminal 3 - AI Service:**
+```bash
 cd ai-service
+# Activate venv first
 python main.py
-
-# Terminal 4: AI Performance Service
-cd ai-service
-python performance_api.py
 ```
 
-### 🌐 Access the Application
+### Access the Application
 
-#### Local Development
 - **Frontend**: http://localhost:5173
-- **Backend API**: http://localhost:5000
-- **AI Sprint Service**: http://localhost:8000
-- **AI Performance Service**: http://localhost:8001
-- **MongoDB**: mongodb://localhost:27017
+- **Backend API**: http://localhost:5000/api
+- **AI Service**: http://localhost:8000
+- **API Health Check**: http://localhost:5000/api/health
 
-#### Production
-- **Frontend**: https://prodflowaii.vercel.app
-- **Backend API**: https://prodflow-6rmm.onrender.com
-- **AI Service**: https://prodflow-2w53.onrender.com
+### Default Test Accounts
 
-#### API Documentation
-- **AI Sprint Docs**: http://localhost:8000/docs
-- **AI Performance Docs**: http://localhost:8001/docs
+After seeding the database, you can use these accounts:
 
-### 📖 Detailed Startup Guide
-For troubleshooting and detailed instructions, see [STARTUP_GUIDE.md](STARTUP_GUIDE.md)
+```
+Product Manager:
+Email: manager@prodflow.ai
+Password: password123
 
-## 🐳 Docker Deployment
+Team Lead:
+Email: lead@prodflow.ai
+Password: password123
 
-### Development
-```bash
-# Start all services with Docker
-docker-compose up -d
-
-# View logs
-docker-compose logs -f
-
-# Stop services
-docker-compose down
+Developer:
+Email: dev@prodflow.ai
+Password: password123
 ```
 
-### Production
-```bash
-# Production deployment
-docker-compose -f docker-compose.prod.yml up -d
-```
-
-## 📊 AI Prediction System
-
-Our intelligent prediction system uses advanced heuristic analysis:
-
-### Prediction Algorithm
-- **Heuristic Analysis**: Rule-based system analyzing sprint parameters
-- **85% Accuracy**: Reliable predictions based on proven sprint metrics
-- **Real-time Analysis**: Instant feedback on sprint feasibility
-- **Risk Assessment**: Identifies potential blockers and bottlenecks
-
-### Features Analyzed (9 total)
-- Team size and workload distribution
-- Sprint duration and daily effort
-- Task complexity and dependencies
-- Historical success rates
-- Team experience levels
+---
 
 ## 📁 Project Structure
 
 ```
 prodflow-ai/
-├── docs/                    # 📚 Documentation
-│   ├── ARCHITECTURE.md     # System architecture overview
-│   ├── AUTHENTICATION.md   # Auth system documentation
-│   ├── DEPLOYMENT.md       # Complete deployment guide
-│   ├── PERFORMANCE.md      # Performance optimization tips
-│   └── TESTING.md          # Testing strategies & scenarios
-├── frontend/                # ⚛️ React frontend application
+├── frontend/                 # React frontend application
 │   ├── src/
-│   │   ├── components/      # Reusable UI components
-│   │   ├── pages/          # Application pages
-│   │   ├── context/        # React context providers
-│   │   └── api/            # API configuration
-│   └── Dockerfile          # Frontend container config
-├── backend/                 # 🚀 Node.js backend API
-│   ├── controllers/        # Route controllers
-│   ├── models/            # MongoDB models
-│   ├── routes/            # API routes
-│   ├── middleware/        # Custom middleware
-│   └── Dockerfile         # Backend container config
-├── ai-service/             # 🤖 Python AI/ML service
-│   ├── main.py            # FastAPI application
-│   ├── requirements.txt   # Python dependencies
-│   └── Dockerfile         # AI service container config
-├── nginx/                  # 🌐 Nginx configuration
-├── docker-compose.yml      # 🐳 Development containers
-├── docker-compose.prod.yml # 🐳 Production containers
-├── mongo-init.js          # 🗄️ Database initialization
-└── README.md              # 📖 Main documentation
+│   │   ├── api/             # API client configuration
+│   │   ├── components/      # Reusable React components
+│   │   ├── context/         # React Context providers
+│   │   ├── hooks/           # Custom React hooks
+│   │   ├── pages/           # Page components
+│   │   └── utils/           # Utility functions
+│   ├── public/              # Static assets
+│   └── package.json
+│
+├── backend/                  # Node.js backend API
+│   ├── config/              # Configuration files
+│   ├── controllers/         # Route controllers
+│   ├── middleware/          # Express middleware
+│   ├── models/              # Mongoose models
+│   ├── routes/              # API routes
+│   ├── utils/               # Utility functions
+│   └── server.js            # Entry point
+│
+├── ai-service/              # Python AI microservice
+│   ├── ai_engine/           # ML models and algorithms
+│   ├── data_ingestion/      # Data loading and preprocessing
+│   ├── insights_generator/  # Insights and recommendations
+│   ├── metrics_engine/      # Performance metrics calculation
+│   ├── models/              # Data models and schemas
+│   └── main.py              # Entry point
+│
+├── docs/                    # Documentation
+│   ├── architecture.md
+│   ├── backend.md
+│   ├── frontend.md
+│   ├── ai-service.md
+│   ├── deployment.md
+│   └── security.md
+│
+├── scripts/                 # Utility scripts
+│   ├── install-all.bat
+│   └── mongo-init.js
+│
+├── .env.example.backend     # Backend environment template
+├── .env.example.frontend    # Frontend environment template
+├── .env.example.ai          # AI service environment template
+├── .gitignore
+├── package.json
+└── README.md
 ```
 
-## 🔧 Configuration
+---
 
-### Environment Variables
+## � API Documentation
 
-Each service has its own environment configuration:
+### Authentication Endpoints
 
-- **Backend**: `backend/.env`
-- **Frontend**: `frontend/.env`
-- **AI Service**: `ai-service/.env`
-
-Example configurations are provided in `.env.example` files.
-
-### Key Configuration Options
-
-#### Backend
-```bash
-MONGODB_URI=mongodb+srv://pallavkanani27_db_user:BcudjJZC1dDuC97R@cluster0.ug3q9ut.mongodb.net/prodflow-ai?retryWrites=true&w=majority
-JWT_SECRET=your-secret-key
-AI_SERVICE_URL=http://localhost:8000
-FRONTEND_URL=https://prodflowaii.vercel.app
-AI_REQUEST_TIMEOUT_MS=4000
-AI_MAX_RETRIES=1
-AI_RETRY_BASE_DELAY_MS=300
-SERVER_REQUEST_TIMEOUT_MS=30000
-SERVER_HEADERS_TIMEOUT_MS=35000
-SERVER_KEEP_ALIVE_TIMEOUT_MS=5000
+```
+POST   /api/auth/register    # Register new user
+POST   /api/auth/login        # Login user
+POST   /api/auth/refresh      # Refresh access token
+POST   /api/auth/logout       # Logout user
 ```
 
-#### Frontend
-```bash
-VITE_API_BASE_URL=https://prodflow-6rmm.onrender.com/api
-VITE_AI_SERVICE_URL=https://prodflow-2w53.onrender.com
+### Sprint Management
+
+```
+GET    /api/sprints           # Get all sprints
+POST   /api/sprints           # Create new sprint (with AI prediction)
+GET    /api/sprints/:id       # Get sprint details
+PUT    /api/sprints/:id       # Update sprint
+DELETE /api/sprints/:id       # Delete sprint
 ```
 
-#### AI Service
-```bash
-HOST=0.0.0.0
-PORT=8000
-ENVIRONMENT=production
+### Task Management
+
+```
+GET    /api/sprints/my-tasks  # Get tasks assigned to current user
+POST   /api/sprints/:id/tasks # Add task to sprint
+PUT    /api/sprints/tasks/:id # Update task status
 ```
 
-## 🔐 Security Features
+### Analytics
 
-- **JWT Authentication** with secure session management
-- **Password Hashing** using bcryptjs with salt rounds
-- **Input Validation** on all API endpoints
-- **CORS Configuration** for cross-origin requests
-- **Rate Limiting** to prevent abuse
-- **Secure Headers** for XSS and CSRF protection
-- **Environment Variables** for sensitive configuration
-
-## 📈 Performance Optimizations
-
-- **Database Indexing** for fast queries
-- **Connection Pooling** for database efficiency
-- **Gzip Compression** for reduced payload sizes
-- **Static Asset Caching** with proper headers
-- **Code Splitting** in frontend for faster loading
-- **Docker Multi-stage Builds** for smaller images
-- **AI timeout/retry fallback** for resilient sprint creation
-
-## 🧪 Testing
-
-### Backend Testing
-```bash
-cd backend
-npm test
+```
+GET    /api/analytics/sprints # Get sprint analytics data
+GET    /api/analytics/tasks   # Get task analytics data
+GET    /api/analytics/summary # Get performance summary
 ```
 
-Runs an end-to-end backend smoke workflow against `http://localhost:5000/api` by default.
-You can override target API with:
+For complete API documentation, see [docs/backend.md](docs/backend.md).
 
-```bash
-TEST_API_BASE_URL=http://localhost:5000/api npm test
-```
+---
 
-Quick modes:
+## 🚢 Deployment
+
+### Production Environment Setup
+
+1. **Create production environment files:**
 
 ```bash
-# Fast smoke (auth + role guards + pagination contracts)
-npm run test:fast
-
-# Full critical workflow (invites, sprint, task review/approval)
-npm run test:full
+cp .env.example.backend backend/.env.production
+cp .env.example.frontend frontend/.env.production
+cp .env.example.ai ai-service/.env.production
 ```
 
-### Frontend Testing
+2. **Configure production values** (use secure secrets!)
+
+3. **Build frontend:**
+
 ```bash
 cd frontend
-npm test
+npm run build
 ```
 
-### AI Service Testing
-```bash
-cd ai-service
-python -m pytest
-```
+### Deployment Options
 
-## 📚 API Documentation
+#### Option 1: Traditional VPS/Cloud Server
 
-The backend provides a comprehensive RESTful API:
+- Deploy backend and AI service on the same server or separate servers
+- Use PM2 for process management
+- Use Nginx as reverse proxy
+- See [docs/deployment.md](docs/deployment.md) for detailed instructions
 
-- **Authentication**: `/api/auth/*`
-- **Products**: `/api/products/*`
-- **Teams**: `/api/teams/*`
-- **Sprints**: `/api/sprints/*`
-- **AI Predictions**: `/ai/sprint-success`
+#### Option 2: Platform-as-a-Service
 
-### Pagination (Performance)
+- **Frontend**: Vercel, Netlify, or AWS Amplify
+- **Backend**: Heroku, Railway, or AWS Elastic Beanstalk
+- **AI Service**: Railway, Render, or AWS Lambda
+- **Database**: MongoDB Atlas
 
-List endpoints support optional pagination query params:
-
-- `page`: 1-based page number
-- `limit`: items per page (max `100`)
-
-When pagination is provided, responses include:
-
-- `totalCount`
-- `page`
-- `limit`
-- `totalPages`
-
-Example:
+#### Option 3: Containerized (Docker)
 
 ```bash
-GET /api/sprints?page=1&limit=20
-GET /api/products?page=2&limit=10
-GET /api/sprints/my-tasks?page=1&limit=25
+# Build and run with Docker Compose
+docker-compose up -d
 ```
 
-Supported paginated list routes:
+See [docs/deployment.md](docs/deployment.md) for comprehensive deployment guides.
 
-- `/api/products`
-- `/api/products/:id/features`
-- `/api/sprints`
-- `/api/sprints/my-tasks`
-- `/api/teams/invitations`
-- `/api/teams/product/:productId`
+---
 
-Full API documentation is available in `backend/API.md`.
+## 🔒 Security
 
-## 🚀 Deployment Options
+### Best Practices Implemented
 
-### Cloud Platforms
-- **AWS**: EC2, ECS, or Lambda deployment
-- **Google Cloud**: Compute Engine or Cloud Run
-- **Azure**: Container Instances or App Service
-- **DigitalOcean**: Droplets or App Platform
+- ✅ JWT-based authentication with refresh tokens
+- ✅ Password hashing with bcrypt
+- ✅ Rate limiting on all endpoints
+- ✅ CORS configuration
+- ✅ Helmet.js security headers
+- ✅ Input validation and sanitization
+- ✅ SQL injection prevention (NoSQL)
+- ✅ XSS protection
+- ✅ Environment variable protection
 
-### Self-Hosted
-- **Docker Compose**: Complete stack deployment
-- **Kubernetes**: Scalable container orchestration
-- **PM2**: Process management for Node.js
-- **Nginx**: Reverse proxy and load balancing
+### Security Checklist
 
-See [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for detailed deployment instructions.
+- [ ] Change all default secrets in production
+- [ ] Use HTTPS in production
+- [ ] Enable MongoDB authentication
+- [ ] Set up firewall rules
+- [ ] Regular security updates
+- [ ] Monitor logs for suspicious activity
+
+See [docs/security.md](docs/security.md) for detailed security guidelines.
+
+---
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+We welcome contributions! Please follow these steps:
+
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/amazing-feature`
+3. **Commit your changes**: `git commit -m 'Add amazing feature'`
+4. **Push to the branch**: `git push origin feature/amazing-feature`
+5. **Open a Pull Request**
+
+### Development Guidelines
+
+- Follow existing code style
+- Write meaningful commit messages
+- Add tests for new features
+- Update documentation as needed
+- Ensure all tests pass before submitting PR
+
+---
 
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+---
 
-- **Scikit-learn** for machine learning capabilities
-- **React** and **Tailwind CSS** for modern UI development
-- **FastAPI** for high-performance Python API
-- **MongoDB** for flexible document storage
-- **Docker** for containerization support
+## 👥 Authors
 
-## 📞 Support
-
-For support and questions:
-- Create an issue in the repository
-- Check [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) for deployment help
-- Review [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for system overview
-- See [docs/TESTING.md](docs/TESTING.md) for testing strategies
-- Check [docs/PERFORMANCE.md](docs/PERFORMANCE.md) for optimization tips
-- Review [docs/AUTHENTICATION.md](docs/AUTHENTICATION.md) for auth setup
-- See API documentation in `backend/API.md`
+- **Your Name** - *Initial work* - [YourGitHub](https://github.com/yourusername)
 
 ---
 
-**Built with ❤️ for modern development teams**
+## 🙏 Acknowledgments
+
+- React team for the amazing framework
+- Express.js community
+- Scikit-learn contributors
+- MongoDB team
+- All open-source contributors
+
+---
+
+## 📞 Support
+
+- **Documentation**: [docs/](docs/)
+- **Issues**: [GitHub Issues](https://github.com/yourusername/prodflow-ai/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/yourusername/prodflow-ai/discussions)
+
+---
+
+## 🗺️ Roadmap
+
+- [ ] Real-time notifications with WebSockets
+- [ ] Advanced AI models (deep learning)
+- [ ] Mobile app (React Native)
+- [ ] Integration with Jira, GitHub, GitLab
+- [ ] Custom reporting and dashboards
+- [ ] Multi-language support
+
+---
+
+**Made with ❤️ by the ProdFlow AI Team**

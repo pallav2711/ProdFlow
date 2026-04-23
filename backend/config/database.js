@@ -25,15 +25,15 @@ const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
       
-      // Connection pool settings for better performance
-      maxPoolSize: 10, // Maximum number of connections in the pool
-      minPoolSize: 2,  // Minimum number of connections in the pool
+      // Connection pool settings for better performance under load
+      maxPoolSize: parseInt(process.env.MONGODB_MAX_POOL_SIZE || '50', 10), // Increased from 10
+      minPoolSize: parseInt(process.env.MONGODB_MIN_POOL_SIZE || '5', 10),  // Increased from 2
       maxIdleTimeMS: 30000, // Close connections after 30 seconds of inactivity
       serverSelectionTimeoutMS: 5000, // How long to try selecting a server
       socketTimeoutMS: 45000, // How long to wait for a response
       
       // Buffering settings (updated for newer MongoDB driver)
-      bufferCommands: false, // Disable mongoose buffering
+      bufferCommands: false, // Disable mongoose buffering - fail fast
       
       // Heartbeat settings
       heartbeatFrequencyMS: 10000, // How often to check server status
@@ -41,6 +41,13 @@ const connectDB = async () => {
       // Compression for network efficiency
       compressors: ['zlib'],
       zlibCompressionLevel: 6,
+      
+      // Read preference for better load distribution
+      readPreference: 'secondaryPreferred', // Read from secondaries when available
+      
+      // Write concern for better performance (adjust based on durability needs)
+      w: 'majority', // Wait for majority acknowledgment
+      wtimeoutMS: 5000, // Write timeout
     };
 
     const conn = await mongoose.connect(process.env.MONGODB_URI, options);

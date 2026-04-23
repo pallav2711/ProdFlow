@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useDashboard } from '../context/DashboardContext'
@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader'
 import PaginationControls from '../components/PaginationControls'
 import PageSkeleton from '../components/PageSkeleton'
 import { StatusIcon, WorkTypeIcon } from '../components/AppIcons'
+import { getStatusColor, getWorkTypeColor } from '../utils/taskHelpers'
 
 const AllTeamTasks = () => {
   const { user } = useAuth()
@@ -87,61 +88,22 @@ const AllTeamTasks = () => {
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'To Do':
-        return 'bg-gray-100 text-gray-700'
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-700'
-      case 'Pending Review':
-        return 'bg-yellow-100 text-yellow-700'
-      case 'Completed':
-        return 'bg-green-100 text-green-700'
-      case 'Blocked':
-        return 'bg-red-100 text-red-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  const getStatusIcon = (status) => <StatusIcon status={status} />
-
+  const getStatusIcon   = (status)   => <StatusIcon status={status} />
   const getWorkTypeIcon = (workType) => <WorkTypeIcon workType={workType} />
 
-  const getWorkTypeColor = (workType) => {
-    switch (workType) {
-      case 'Frontend':
-        return 'bg-purple-100 text-purple-700'
-      case 'Backend':
-        return 'bg-blue-100 text-blue-700'
-      case 'Database':
-        return 'bg-cyan-100 text-cyan-700'
-      case 'UI/UX Design':
-        return 'bg-pink-100 text-pink-700'
-      case 'DevOps':
-        return 'bg-orange-100 text-orange-700'
-      case 'Testing':
-        return 'bg-teal-100 text-teal-700'
-      case 'Full Stack':
-        return 'bg-indigo-100 text-indigo-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  const filteredTasks = () => {
-    if (filterStatus === 'all') return allTasks
-    return allTasks.filter(task => task.status === filterStatus)
-  }
-
-  const stats = {
-    total: allTasks.length,
-    todo: allTasks.filter(t => t.status === 'To Do').length,
-    inProgress: allTasks.filter(t => t.status === 'In Progress').length,
+  const stats = useMemo(() => ({
+    total:         allTasks.length,
+    todo:          allTasks.filter(t => t.status === 'To Do').length,
+    inProgress:    allTasks.filter(t => t.status === 'In Progress').length,
     pendingReview: allTasks.filter(t => t.status === 'Pending Review').length,
-    completed: allTasks.filter(t => t.status === 'Completed').length,
-    blocked: allTasks.filter(t => t.status === 'Blocked').length
-  }
+    completed:     allTasks.filter(t => t.status === 'Completed').length,
+    blocked:       allTasks.filter(t => t.status === 'Blocked').length,
+  }), [allTasks])
+
+  const filteredTasks = useMemo(() =>
+    filterStatus === 'all' ? allTasks : allTasks.filter(t => t.status === filterStatus),
+    [allTasks, filterStatus]
+  )
 
   if (loading) {
     return <PageSkeleton variant="table" cards={6} rows={7} />
@@ -332,7 +294,7 @@ const AllTeamTasks = () => {
 
         {/* Tasks List */}
         <div className="p-6">
-          {filteredTasks().length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <div className="text-center py-12">
               <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -354,7 +316,7 @@ const AllTeamTasks = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredTasks().map((task) => (
+              {filteredTasks.map((task) => (
                 <div key={task._id} className="border border-gray-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-shadow bg-gray-50">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     <div className="flex-1 min-w-0">

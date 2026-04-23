@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useAuth } from '../context/AuthContext'
 import { useDashboard } from '../context/DashboardContext'
 import { useToast } from '../context/ToastContext'
 import PageHeader from '../components/PageHeader'
 import PageSkeleton from '../components/PageSkeleton'
 import { StatusIcon, WorkTypeIcon } from '../components/AppIcons'
+import { getStatusColor, getWorkTypeColor } from '../utils/taskHelpers'
 
 const MyTasks = () => {
   const { user } = useAuth()
@@ -43,61 +44,22 @@ const MyTasks = () => {
     }
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'To Do':
-        return 'bg-gray-100 text-gray-700'
-      case 'In Progress':
-        return 'bg-blue-100 text-blue-700'
-      case 'Pending Review':
-        return 'bg-yellow-100 text-yellow-700'
-      case 'Completed':
-        return 'bg-green-100 text-green-700'
-      case 'Blocked':
-        return 'bg-red-100 text-red-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  const getStatusIcon = (status) => <StatusIcon status={status} />
-
+  const getStatusIcon   = (status)   => <StatusIcon status={status} />
   const getWorkTypeIcon = (workType) => <WorkTypeIcon workType={workType} />
 
-  const getWorkTypeColor = (workType) => {
-    switch (workType) {
-      case 'Frontend':
-        return 'bg-purple-100 text-purple-700'
-      case 'Backend':
-        return 'bg-blue-100 text-blue-700'
-      case 'Database':
-        return 'bg-cyan-100 text-cyan-700'
-      case 'UI/UX Design':
-        return 'bg-pink-100 text-pink-700'
-      case 'DevOps':
-        return 'bg-orange-100 text-orange-700'
-      case 'Testing':
-        return 'bg-teal-100 text-teal-700'
-      case 'Full Stack':
-        return 'bg-indigo-100 text-indigo-700'
-      default:
-        return 'bg-gray-100 text-gray-700'
-    }
-  }
-
-  const filteredTasks = () => {
-    if (filterStatus === 'all') return myTasks
-    return myTasks.filter(task => task.status === filterStatus)
-  }
-
-  const stats = {
-    total: myTasks.length,
-    todo: myTasks.filter(t => t.status === 'To Do').length,
-    inProgress: myTasks.filter(t => t.status === 'In Progress').length,
+  const stats = useMemo(() => ({
+    total:         myTasks.length,
+    todo:          myTasks.filter(t => t.status === 'To Do').length,
+    inProgress:    myTasks.filter(t => t.status === 'In Progress').length,
     pendingReview: myTasks.filter(t => t.status === 'Pending Review').length,
-    completed: myTasks.filter(t => t.status === 'Completed').length,
-    blocked: myTasks.filter(t => t.status === 'Blocked').length
-  }
+    completed:     myTasks.filter(t => t.status === 'Completed').length,
+    blocked:       myTasks.filter(t => t.status === 'Blocked').length,
+  }), [myTasks])
+
+  const filteredTasks = useMemo(() =>
+    filterStatus === 'all' ? myTasks : myTasks.filter(t => t.status === filterStatus),
+    [myTasks, filterStatus]
+  )
 
   if (loading) {
     return <PageSkeleton variant="dense" cards={6} rows={6} />
@@ -211,7 +173,7 @@ const MyTasks = () => {
 
         {/* Tasks List */}
         <div className="p-4 sm:p-6">
-          {filteredTasks().length === 0 ? (
+          {filteredTasks.length === 0 ? (
             <div className="text-center py-12">
               <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
@@ -225,7 +187,7 @@ const MyTasks = () => {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredTasks().map((task) => (
+              {filteredTasks.map((task) => (
                 <div key={task._id} className="border border-gray-200 rounded-xl p-4 sm:p-5 hover:shadow-md transition-shadow bg-gray-50 desktop-hover">
                   <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                     <div className="flex-1 min-w-0">

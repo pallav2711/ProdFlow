@@ -1,235 +1,224 @@
 /**
  * Authentication Controller
- * Handles user registration and login with persistent sessions
+ *
+ * CHANGES:
+ * 1. JWT access token now embeds { id, role, email } — middleware no longer
+ *    needs a DB query on every request.
+ * 2. Refresh token is set as an httpOnly, Secure, SameSite=Strict cookie
+ *    instead of being returned in the JSON body.  This prevents XSS from
+ *    stealing the long-lived token.
+ * 3. /auth/refresh reads the token from the cookie, not req.body.
+ * 4. /auth/logout clears the cookie server-side.
  */
 
-const User = require('../models/User');
-const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
-const { validationError, unauthorizedError, conflictError } = require('../utils/errorFactory');
-const sendSuccess = require('../utils/successResponse');
+const User    = require('../models/User')
+const jwt     = require('jsonwebtoken')
+const crypto  = require('crypto')
+const logger  = require('../utils/logger')
+const { validationError, unauthorizedError, conflictError } = require('../utils/errorFactory')
+const sendSuccess = require('../utils/successResponse')
 
-/** Case-insensitive exact email match (handles Compass/legacy rows with odd casing). */
+// ── helpers ──────────────────────────────────────────────────────────────────
+
 const emailMatchQuery = (email) => {
-  const trimmed = String(email || '').trim();
-  if (!trimmed) {
-    return null;
-  }
-  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  return new RegExp(`^${escaped}$`, 'i');
-};
+  const trimmed = String(email || '').trim()
+  if (!trimmed) return null
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  return new RegExp(`^${escaped}$`, 'i')
+}
 
-// Generate JWT access token (short-lived)
-const generateAccessToken = (id, rememberMe = false) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: rememberMe ? '30m' : '15m'
-  });
-};
+/** Access token — short-lived, carries role so middleware skips DB */
+const generateAccessToken = (user, rememberMe = false) =>
+  jwt.sign(
+    { id: user._id, role: user.role, email: user.email },
+    process.env.JWT_SECRET,
+    { expiresIn: rememberMe ? '30m' : '15m' }
+  )
 
-// Generate JWT refresh token (long-lived)
-const generateRefreshToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET, {
-    expiresIn: '7d' // Long-lived refresh token
-  });
-};
+/** Refresh token — long-lived, stored hashed in DB + sent as httpOnly cookie */
+const generateRefreshToken = (userId) =>
+  jwt.sign(
+    { id: userId },
+    process.env.JWT_REFRESH_SECRET,
+    { expiresIn: '7d' }
+  )
 
 const hashToken = (token) =>
-  crypto.createHash('sha256').update(token).digest('hex');
+  crypto.createHash('sha256').update(token).digest('hex')
 
-// @desc    Register new user
-// @route   POST /api/auth/register
-// @access  Public
+/** Set the refresh token as an httpOnly cookie */
+const setRefreshCookie = (res, token) => {
+  res.cookie('refreshToken', token, {
+    httpOnly: true,
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    maxAge:   7 * 24 * 60 * 60 * 1000, // 7 days in ms
+    path:     '/api/auth',              // only sent to auth endpoints
+  })
+}
+
+/** Clear the refresh token cookie */
+const clearRefreshCookie = (res) => {
+  res.clearCookie('refreshToken', {
+    httpOnly: true,
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path:     '/api/auth',
+  })
+}
+
+// ── controllers ───────────────────────────────────────────────────────────────
+
+// @route POST /api/auth/register
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role } = req.body
 
-    const emailQuery = emailMatchQuery(email);
-    const userExists = emailQuery ? await User.findOne({ email: emailQuery }) : null;
-    if (userExists) {
-      return next(conflictError('User already exists', 'USER_ALREADY_EXISTS'));
-    }
+    const emailQuery = emailMatchQuery(email)
+    if (!emailQuery) return next(validationError('Invalid email', 'INVALID_EMAIL'))
 
-    // Create user
-    const user = await User.create({
-      name,
-      email,
-      password,
-      role
-    });
+    const exists = await User.findOne({ email: emailQuery }).select('_id').lean()
+    if (exists) return next(conflictError('User already exists', 'USER_ALREADY_EXISTS'))
 
-    // For registration, default to session-only (no rememberMe)
-    const rememberMe = false;
-    
-    // Generate tokens
-    const accessToken = generateAccessToken(user._id, rememberMe);
-    const refreshToken = rememberMe ? generateRefreshToken(user._id) : null;
+    const user = await User.create({ name, email, password, role })
 
-    // Store refresh token in user document (for security)
-    if (refreshToken) {
-      user.refreshToken = hashToken(refreshToken);
-      user.refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      await user.save();
-    }
+    const accessToken  = generateAccessToken(user, false)
+    // No refresh token on registration — session-only by default
+    logger.info('user_registered', { userId: user._id, role: user.role })
 
     return sendSuccess(res, {
       statusCode: 201,
       data: {
         accessToken,
-        refreshToken,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
-      }
-    });
-  } catch (error) {
-    return next(error);
+        user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      },
+    })
+  } catch (err) {
+    return next(err)
   }
-};
+}
 
-// @desc    Login user
-// @route   POST /api/auth/login
-// @access  Public
+// @route POST /api/auth/login
 exports.login = async (req, res, next) => {
   try {
-    const { email, password, rememberMe = false } = req.body;
+    const { email, password, rememberMe = false } = req.body
 
-    // Validate input
     if (!email || !password) {
-      return next(validationError('Please provide email and password'));
+      return next(validationError('Please provide email and password', 'MISSING_CREDENTIALS'))
     }
 
-    const emailQuery = emailMatchQuery(email);
-    // Check for user (include password for comparison)
+    const emailQuery = emailMatchQuery(email)
     const user = emailQuery
       ? await User.findOne({ email: emailQuery }).select('+password +refreshToken +refreshTokenExpiresAt')
-      : null;
-    if (!user) {
-      return next(unauthorizedError('Invalid credentials', 'INVALID_CREDENTIALS'));
+      : null
+
+    if (!user || !(await user.comparePassword(password))) {
+      // Same message for both cases — prevents user enumeration
+      return next(unauthorizedError('Invalid credentials', 'INVALID_CREDENTIALS'))
     }
 
-    // Check password
-    const isMatch = await user.comparePassword(password);
-    if (!isMatch) {
-      return next(unauthorizedError('Invalid credentials', 'INVALID_CREDENTIALS'));
-    }
+    const accessToken = generateAccessToken(user, rememberMe)
 
-    // Generate tokens
-    const accessToken = generateAccessToken(user._id, rememberMe);
-    const refreshToken = rememberMe ? generateRefreshToken(user._id) : null;
-
-    // Store refresh token if rememberMe is true
-    if (refreshToken) {
-      user.refreshToken = hashToken(refreshToken);
-      user.refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    if (rememberMe) {
+      const refreshToken = generateRefreshToken(user._id)
+      user.refreshToken           = hashToken(refreshToken)
+      user.refreshTokenExpiresAt  = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+      setRefreshCookie(res, refreshToken)
     } else {
-      user.refreshToken = null;
-      user.refreshTokenExpiresAt = null;
+      // Clear any stale refresh cookie / DB token
+      user.refreshToken          = null
+      user.refreshTokenExpiresAt = null
+      clearRefreshCookie(res)
     }
-    user.lastLogin = new Date();
-    await user.save();
+
+    user.lastLogin = new Date()
+    await user.save()
+
+    logger.info('user_login', { userId: user._id, role: user.role, rememberMe })
 
     return sendSuccess(res, {
       data: {
         accessToken,
-        refreshToken,
         rememberMe,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
-      }
-    });
-  } catch (error) {
-    return next(error);
+        user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      },
+    })
+  } catch (err) {
+    return next(err)
   }
-};
+}
 
-// @desc    Refresh access token
-// @route   POST /api/auth/refresh
-// @access  Public
+// @route POST /api/auth/refresh
 exports.refreshToken = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    // Read from httpOnly cookie — NOT from req.body
+    const token = req.cookies?.refreshToken
 
-    if (!refreshToken) {
-      return next(unauthorizedError('Refresh token required', 'REFRESH_TOKEN_REQUIRED'));
+    if (!token) {
+      return next(unauthorizedError('Refresh token required', 'REFRESH_TOKEN_REQUIRED'))
     }
 
-    // Verify refresh token
-    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || process.env.JWT_SECRET);
-    
-    // Find user and check if refresh token matches
-    const user = await User.findById(decoded.id).select('+refreshToken +refreshTokenExpiresAt');
-    const hashedToken = hashToken(refreshToken);
-    const refreshTokenExpired =
-      user?.refreshTokenExpiresAt && user.refreshTokenExpiresAt.getTime() < Date.now();
-
-    if (
-      !user ||
-      refreshTokenExpired ||
-      !user.refreshToken ||
-      (user.refreshToken !== hashedToken && user.refreshToken !== refreshToken)
-    ) {
-      return next(unauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN'));
+    let decoded
+    try {
+      decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET)
+    } catch {
+      return next(unauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN'))
     }
 
-    // Generate new access token
-    const newAccessToken = generateAccessToken(user._id, true);
-    const rotatedRefreshToken = generateRefreshToken(user._id);
-    user.refreshToken = hashToken(rotatedRefreshToken);
-    user.refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-    await user.save();
+    const user = await User.findById(decoded.id)
+      .select('+refreshToken +refreshTokenExpiresAt')
+
+    const hashed  = hashToken(token)
+    const expired = user?.refreshTokenExpiresAt && user.refreshTokenExpiresAt < new Date()
+
+    if (!user || expired || user.refreshToken !== hashed) {
+      clearRefreshCookie(res)
+      return next(unauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN'))
+    }
+
+    // Rotate both tokens
+    const newAccessToken  = generateAccessToken(user, true)
+    const newRefreshToken = generateRefreshToken(user._id)
+
+    user.refreshToken          = hashToken(newRefreshToken)
+    user.refreshTokenExpiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
+    await user.save()
+
+    setRefreshCookie(res, newRefreshToken)
 
     return sendSuccess(res, {
       data: {
         accessToken: newAccessToken,
-        refreshToken: rotatedRefreshToken,
-        user: {
-          id: user._id,
-          name: user.name,
-          email: user.email,
-          role: user.role
-        }
-      }
-    });
-  } catch (error) {
-    return next(unauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN'));
+        user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      },
+    })
+  } catch (err) {
+    return next(unauthorizedError('Invalid refresh token', 'INVALID_REFRESH_TOKEN'))
   }
-};
+}
 
-// @desc    Get current logged in user
-// @route   GET /api/auth/me
-// @access  Private
+// @route GET /api/auth/me  (needs fresh DB data — intentional)
 exports.getMe = async (req, res, next) => {
   try {
-    const user = await User.findById(req.user.id);
-    
-    return sendSuccess(res, { data: { user } });
-  } catch (error) {
-    return next(error);
+    const user = await User.findById(req.user.id).lean()
+    if (!user) return next(unauthorizedError('User not found', 'USER_NOT_FOUND'))
+    return sendSuccess(res, { data: { user } })
+  } catch (err) {
+    return next(err)
   }
-};
+}
 
-// @desc    Logout user
-// @route   POST /api/auth/logout
-// @access  Private
+// @route POST /api/auth/logout
 exports.logout = async (req, res, next) => {
   try {
-    // Clear refresh token from database
-    const user = await User.findById(req.user.id).select('+refreshToken +refreshTokenExpiresAt');
-    if (user) {
-      user.refreshToken = null;
-      user.refreshTokenExpiresAt = null;
-      await user.save();
-    }
-
-    return sendSuccess(res, { message: 'Logged out successfully' });
-  } catch (error) {
-    return next(error);
+    await User.findByIdAndUpdate(req.user.id, {
+      refreshToken:          null,
+      refreshTokenExpiresAt: null,
+    })
+    clearRefreshCookie(res)
+    logger.info('user_logout', { userId: req.user.id })
+    return sendSuccess(res, { message: 'Logged out successfully' })
+  } catch (err) {
+    return next(err)
   }
-};
+}

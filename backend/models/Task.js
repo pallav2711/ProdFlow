@@ -55,16 +55,30 @@ const taskSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  isVoided: {
+    type: Boolean,
+    default: false
+  },
+  voidedAt: {
+    type: Date
+  },
+  voidReason: {
+    type: String,
+    default: ''
+  },
   createdAt: {
     type: Date,
     default: Date.now
   }
 });
 
-// Common read/query paths
-taskSchema.index({ sprint: 1, status: 1, createdAt: -1 });
-taskSchema.index({ sprint: 1, createdAt: -1 });
-taskSchema.index({ assignedTo: 1, status: 1, createdAt: -1 });
-taskSchema.index({ assignedTo: 1, createdAt: -1 });
+// Optimised indexes — covers all analytics and task-list queries
+taskSchema.index({ sprint: 1, isVoided: 1, status: 1 })
+taskSchema.index({ assignedTo: 1, isVoided: 1, status: 1, createdAt: -1 })
+taskSchema.index({ isVoided: 1, status: 1, createdAt: -1 })
+taskSchema.index({ sprint: 1, createdAt: -1 })
+// New: Analytics query optimization
+taskSchema.index({ isVoided: 1, createdAt: 1 }) // For date-range analytics queries
+taskSchema.index({ sprint: 1, assignedTo: 1, isVoided: 1 }) // For developer performance queries
 
 module.exports = mongoose.model('Task', taskSchema);

@@ -141,9 +141,13 @@ class TeamLeadMetrics(BaseModel):
 class TeamInsight(BaseModel):
     """Generated insight about team performance"""
     insight_type: str  # "positive", "warning", "recommendation"
-    category: str  # "developer", "team_lead", "sprint", "trend"
+    category: str      # "developer", "team_lead", "sprint", "trend", "team", "estimation", "code_quality", "deadline"
     message: str
-    priority: str  # "high", "medium", "low"
+    priority: str      # "high", "medium", "low"
+    metric: Optional[str] = ''
+    value: Optional[float] = 0.0
+    benchmark: Optional[float] = 0.0
+    action: Optional[str] = ''
     data: Optional[Dict[str, Any]] = None
 
 

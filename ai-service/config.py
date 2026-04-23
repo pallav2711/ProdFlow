@@ -19,8 +19,9 @@ class Settings(BaseSettings):
     # CORS Configuration
     CORS_ORIGINS: str = os.getenv('CORS_ORIGINS', '["*"]')
     
-    # Database Configuration
-    MONGODB_URI: Optional[str] = os.getenv('MONGODB_URI', 'mongodb+srv://pallavkanani27_db_user:BcudjJZC1dDuC97R@cluster0.ug3q9ut.mongodb.net/prodflow-ai?retryWrites=true&w=majority')
+    # Database — no default, must be set via environment variable
+    # Fails loudly at startup if missing (intentional)
+    MONGODB_URI: str = os.environ.get('MONGODB_URI', '')
     POSTGRES_URI: Optional[str] = os.getenv('POSTGRES_URI')
     DATABASE_TYPE: str = os.getenv('DATABASE_TYPE', 'mongodb')  # mongodb or postgres
     

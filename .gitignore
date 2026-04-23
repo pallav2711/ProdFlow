@@ -1,56 +1,117 @@
-# Environment variables
+# ═══════════════════════════════════════════════════════════════════════════════
+# ProdFlow AI - .gitignore
+# Professional open-source repository configuration
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# ── Environment Variables (SECURITY CRITICAL) ──────────────────────────────────
+# Never commit actual environment files with secrets
 .env
 .env.local
 .env.development
-.env.production
+.env.test
+.env.production.*
 *.env
 
-# Keep example files
+# Exception: Keep example files for documentation
 !.env.example
-!.env.production.example
+!.env.example.*
 
-# Dependencies
+# ── Dependencies ───────────────────────────────────────────────────────────────
+# Node.js
 node_modules/
-venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json.backup
 
-# Build outputs
+# Python
+venv/
+env/
+ENV/
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
 dist/
 build/
-*.egg-info/
+pip-log.txt
+pip-delete-this-directory.txt
 
-# IDE
+# ── Build Outputs ──────────────────────────────────────────────────────────────
+dist/
+build/
+out/
+.next/
+.nuxt/
+*.tsbuildinfo
+
+# ── IDE & Editors ──────────────────────────────────────────────────────────────
 .vscode/
 .idea/
 *.swp
 *.swo
+*.swn
 *~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
 
-# OS
+# ── Operating System ───────────────────────────────────────────────────────────
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+desktop.ini
 
-# Logs
+# ── Logs ───────────────────────────────────────────────────────────────────────
 logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
-yarn-error.log*
+lerna-debug.log*
+pnpm-debug.log*
 
-# Testing
+# ── Testing & Coverage ─────────────────────────────────────────────────────────
 coverage/
+.nyc_output/
 .pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
 
-# Temporary files
+# ── Temporary Files ────────────────────────────────────────────────────────────
 *.tmp
 *.temp
+*.bak
+*.backup
 .cache/
+.parcel-cache/
 
-# Development scripts
+# ── Database Files ─────────────────────────────────────────────────────────────
+*.sqlite
+*.sqlite3
+*.db
+
+# ── Credentials & Secrets ──────────────────────────────────────────────────────
+credentials/
+secrets/
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+
+# ── Development Scripts (Windows) ──────────────────────────────────────────────
 start-all-services.bat
 stop-all-services.bat
 restart-*.bat
@@ -61,5 +122,19 @@ START_*.bat
 check-*.bat
 fix-*.bat
 
-# Documentation (keep in repo but not in deployment)
-# These are kept for reference
+# ── AI/ML Models (too large for git) ───────────────────────────────────────────
+*.h5
+*.pkl
+*.pickle
+*.joblib
+*.model
+models/*.pkl
+models/*.h5
+
+# ── Miscellaneous ──────────────────────────────────────────────────────────────
+.env.backup
+*.orig
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# End of .gitignore
+# ═══════════════════════════════════════════════════════════════════════════════
