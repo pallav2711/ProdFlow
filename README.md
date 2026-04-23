@@ -31,33 +31,6 @@ ProdFlow AI is a **next-generation SaaS platform** that revolutionizes how devel
 
 ---
 
-## 📸 Demo
-
-<div align="center">
-
-### 🎨 Dashboard Preview
-
-![Dashboard Screenshot](https://via.placeholder.com/800x450/4F46E5/FFFFFF?text=Dashboard+Preview)
-
-*Sprint planning dashboard with AI-powered success predictions*
-
-### � Analytics View
-
-![Analytics Screenshot](https://via.placeholder.com/800x450/10B981/FFFFFF?text=Analytics+Dashboard)
-
-*Real-time team performance metrics and insights*
-
-### 📱 Responsive Design
-
-<img src="https://via.placeholder.com/300x600/F59E0B/FFFFFF?text=Mobile+View" alt="Mobile View" width="300"/>
-
-*Fully responsive design for on-the-go management*
-
-</div>
-
-> 📝 **Note**: Replace placeholder images with actual screenshots of your application
-
----
 
 ## 🌐 Live Demo
 
