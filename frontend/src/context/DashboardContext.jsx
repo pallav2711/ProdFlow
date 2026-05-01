@@ -4,7 +4,7 @@
  * PERFORMANCE FIXES:
  * 1. Removed N+1 sprint detail fetches — was doing api.get(`/sprints/${id}`)
  *    for every sprint in the list. AllTeamTasks now uses the dedicated
- *    /sprints/my-tasks endpoint; tasks are not pre-fetched for all sprints.
+ *    /sprints/all-tasks endpoint to fetch all team tasks.
  * 2. Navigation refresh guard — only refetches when data is actually stale
  *    (was always force-fetching on every route change).
  * 3. useMemo on the context value — prevents all consumers from re-rendering
@@ -31,7 +31,7 @@ const EMPTY = {
   myTasks: [],
   allTasks: [],
   sprints: [],
-  pagination: { products: null, sprints: null, myTasks: null },
+  pagination: { products: null, sprints: null, myTasks: null, allTasks: null },
   loading: false,
   lastFetch: null,
   error: null,
@@ -69,20 +69,19 @@ export const DashboardProvider = ({ children }) => {
       const sprintsParams  = toPaginationParams(options?.pagination?.sprints)
       const productsParams = toPaginationParams(options?.pagination?.products)
       const myTasksParams  = toPaginationParams(options?.pagination?.myTasks)
+      const allTasksParams = toPaginationParams(options?.pagination?.allTasks)
 
-      // 3 parallel requests — no N+1 loop
-      const [sprintsRes, productsRes, myTasksRes] = await Promise.all([
+      // 4 parallel requests — fetch all team tasks for team leads
+      const [sprintsRes, productsRes, myTasksRes, allTasksRes] = await Promise.all([
         api.get('/sprints',          { params: sprintsParams }),
         api.get('/products',         { params: productsParams }),
         api.get('/sprints/my-tasks', { params: myTasksParams }),
+        api.get('/sprints/all-tasks', { params: allTasksParams }),
       ])
 
       const sprintsData = sprintsRes.data.sprints  || []
       const userTasks   = myTasksRes.data.tasks    || []
-
-      // AllTeamTasks fetches its own sprint details on demand (expand click).
-      // We no longer pre-fetch every sprint here.
-      const allTasksData = userTasks // fallback — AllTeamTasks overrides with its own fetch
+      const allTasksData = allTasksRes.data.tasks  || []
 
       const newData = {
         stats: {
@@ -114,6 +113,12 @@ export const DashboardProvider = ({ children }) => {
             page: myTasksRes.data.page,
             limit: myTasksRes.data.limit,
             totalPages: myTasksRes.data.totalPages,
+          } : null,
+          allTasks: allTasksRes.data?.totalCount != null ? {
+            totalCount: allTasksRes.data.totalCount,
+            page: allTasksRes.data.page,
+            limit: allTasksRes.data.limit,
+            totalPages: allTasksRes.data.totalPages,
           } : null,
         },
         loading:   false,

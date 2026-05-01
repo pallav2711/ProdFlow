@@ -571,3 +571,74 @@ exports.getMyTasks = async (req, res, next) => {
     return next(error);
   }
 };
+
+// @desc    Get all tasks from team (all products user is member of)
+// @route   GET /api/sprints/all-tasks
+// @access  Private
+exports.getAllTeamTasks = async (req, res, next) => {
+  try {
+    const pagination = parsePagination(req.query);
+
+    // Get products user is a member of
+    const memberships = await ProjectMember.find({
+      user: req.user.id,
+      status: 'active'
+    }).select('product').lean();
+
+    if (!memberships || memberships.length === 0) {
+      return res.status(200).json({
+        success: true,
+        count: 0,
+        ...(pagination ? {
+          totalCount: 0,
+          page: pagination.page,
+          limit: pagination.limit,
+          totalPages: 1
+        } : {}),
+        tasks: [],
+        message: 'No product memberships found'
+      });
+    }
+
+    const productIds = memberships.map((m) => m.product);
+
+    // Get all sprints for those products
+    const sprints = await Sprint.find({
+      product: { $in: productIds }
+    }).select('_id').lean();
+
+    const sprintIds = sprints.map(s => s._id);
+
+    // Get all tasks from those sprints
+    const filter = { sprint: { $in: sprintIds } };
+
+    let taskQuery = Task.find(filter)
+      .select('sprint feature title description assignedTo workType estimatedHours status reviewedBy reviewedAt reviewNotes createdAt')
+      .populate('feature', 'name')
+      .populate('sprint', 'name')
+      .populate('assignedTo', 'name email')
+      .populate('reviewedBy', 'name email')
+      .sort('-createdAt');
+
+    if (pagination) {
+      taskQuery = taskQuery.skip(pagination.skip).limit(pagination.limit);
+    }
+
+    const tasks = await taskQuery.lean();
+    const totalCount = pagination ? await Task.countDocuments(filter) : tasks.length;
+
+    res.status(200).json({
+      success: true,
+      count: tasks.length,
+      ...(pagination ? {
+        totalCount,
+        page: pagination.page,
+        limit: pagination.limit,
+        totalPages: Math.ceil(totalCount / pagination.limit) || 1
+      } : {}),
+      tasks
+    });
+  } catch (error) {
+    return next(error);
+  }
+};

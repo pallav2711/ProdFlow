@@ -13,7 +13,8 @@ const {
   rejectTask,
   deleteSprint,
   updateSprint,
-  getMyTasks
+  getMyTasks,
+  getAllTeamTasks
 } = require('../controllers/sprint.controller');
 const { protect, authorize } = require('../middleware/auth');
 const { validateSprint, validateTask, validateObjectId } = require('../middleware/validation');
@@ -24,6 +25,9 @@ router.use(protect);
 
 // Get my tasks
 router.get('/my-tasks', getMyTasks);
+
+// Get all team tasks
+router.get('/all-tasks', getAllTeamTasks);
 
 router.route('/')
   .post(authorize('Team Lead', 'Product Manager'), asyncHandler(createSprint))
